@@ -71,57 +71,26 @@
         <div id="found" class="hidden">スタンプを発見！</div>
     </div>
     
-    <a-scene 
-        mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no;"
-        color-space="sRGB"
-        renderer="colorManagement: true, physicallyCorrectLights"
+    <a-scene id="scene"
+        embedded
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        embedded
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+        loading-screen="enabled: false"
+        renderer="colorManagement: true, physicallyCorrectLights: true, alpha: true, antialias: true"
+        background="color: #000; transparent: true">
         
-        <a-assets>
+        <a-assets timeout="30000">
             <a-asset-item id="avatarModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item>
         </a-assets>
         
         <a-camera 
             position="0 0 0" 
-            look-controls="enabled: false" 
-            cursor="fuse: false; rayOrigin: mouse;"
-            raycaster="far: ${customFields.libVersion}; objects: .clickable">
+            look-controls="enabled: false">
         </a-camera>
         
-        <!-- AR Target Entity -->
-        <a-entity mindar-image-target="targetIndex: 0">
-            <!-- 3D Model -->
-            <a-gltf-model 
-                gltf-model="#avatarModel"
-                scale="0.3 0.3 0.3"
-                position="0 0 0"
-                rotation="0 0 0"
-                animation-mixer
-                visible="true">
-            </a-gltf-model>
-            
-            <!-- Success Message -->
-            <a-text 
-                value="スタンプGET!"
-                position="0 0.5 0"
-                align="center"
-                color="red"
-                scale="2 2 2"
-                visible="true">
-            </a-text>
-            
-            <!-- Celebration Animation -->
-            <a-box 
-                position="0 0.3 0" 
-                scale="0.1 0.1 0.1" 
-                color="gold"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
-                visible="true">
-            </a-box>
-        </a-entity>
+        <!-- This will be dynamically populated -->
+        <a-entity id="ar-content"></a-entity>
     </a-scene>
 
     <script>
@@ -130,12 +99,42 @@
         const info = document.querySelector("#info");
         const status = document.querySelector("#status");
         const found = document.querySelector("#found");
+        const sceneEl = document.querySelector("#scene");
+        const arContent = document.querySelector("#ar-content");
         
-        let sceneEl;
-        let arSystem;
+        let mindARInstance = null;
+        let isARStarted = false;
+        
+        // Wait for libraries to load completely
+        function waitForLibraries() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 50;
+                
+                function check() {
+                    attempts++;
+                    console.log(`Library check attempt ${attempts}`);
+                    
+                    if (window.AFRAME && window.MINDAR) {
+                        console.log("Libraries loaded successfully");
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error("Libraries failed to load"));
+                    } else {
+                        setTimeout(check, 200);
+                    }
+                }
+                check();
+            });
+        }
         
         startButton.addEventListener('click', async () => {
             try {
+                status.textContent = "ライブラリを確認中...";
+                
+                // Wait for libraries to load
+                await waitForLibraries();
+                
                 status.textContent = "カメラを初期化中...";
                 
                 // Get camera permission first
@@ -147,93 +146,238 @@
                     }
                 });
                 
-                // Stop the stream immediately - MindAR will handle it
+                // Stop the stream - MindAR will handle camera
                 stream.getTracks().forEach(track => track.stop());
                 
                 status.textContent = "ARを初期化中...";
                 
-                // Initialize A-Frame scene
-                sceneEl = document.querySelector('a-scene');
-                
-                // Wait for A-Frame to load
-                if (sceneEl.hasLoaded) {
-                    initAR();
-                } else {
-                    sceneEl.addEventListener('loaded', initAR);
-                }
+                // Initialize with direct MindAR approach
+                await initMindAR();
                 
             } catch (error) {
-                console.error('Error accessing camera:', error);
-                status.textContent = `エラー: ${error.message}`;
-                
-                if (error.name === 'NotAllowedError') {
-                    status.innerHTML = `
-                        <div>カメラのアクセス許可が拒否されました</div>
-                        <div style="font-size: 12px; margin-top: 10px;">
-                            ブラウザの設定でカメラを許可してください
-                        </div>
-                    `;
-                } else if (error.name === 'NotFoundError') {
-                    status.textContent = "カメラが見つかりません";
-                } else {
-                    status.textContent = "カメラの初期化に失敗しました";
-                }
+                console.error('Initialization error:', error);
+                handleError(error);
             }
         });
         
-        function initAR() {
+        async function initMindAR() {
             try {
-                arSystem = sceneEl.systems["mindar-image-system"];
+                // Create MindAR instance directly
+                const { MindARThree } = window.MINDAR.IMAGE;
                 
-                arSystem.start().then(() => {
-                    console.log("MindAR started successfully");
-                    loading.classList.add("hidden");
-                    info.classList.remove("hidden");
+                mindARInstance = new MindARThree({
+                    container: sceneEl,
+                    imageTargetSrc: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind',
+                    maxTrack: 1,
+                    uiLoading: "no",
+                    uiScanning: "no",
+                    uiError: "no"
+                });
+                
+                console.log("MindAR instance created");
+                
+                // Start the AR system
+                await mindARInstance.start();
+                console.log("MindAR started successfully");
+                
+                isARStarted = true;
+                loading.classList.add("hidden");
+                info.classList.remove("hidden");
+                
+                // Setup 3D content
+                setupARContent();
+                
+            } catch (error) {
+                console.error("MindAR initialization failed:", error);
+                
+                // Fallback to A-Frame component approach
+                try {
+                    await initWithAFrameComponent();
+                } catch (fallbackError) {
+                    console.error("Fallback initialization also failed:", fallbackError);
+                    throw new Error(`AR initialization failed: ${error.message}`);
+                }
+            }
+        }
+        
+        async function initWithAFrameComponent() {
+            console.log("Trying A-Frame component fallback");
+            
+            // Remove existing content
+            arContent.innerHTML = '';
+            
+            // Add MindAR component to scene
+            sceneEl.setAttribute('mindar-image', {
+                imageTargetSrc: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind',
+                autoStart: false,
+                uiLoading: 'no',
+                uiScanning: 'no',
+                uiError: 'no',
+                maxTrack: 1
+            });
+            
+            // Wait for component to initialize
+            await new Promise(resolve => {
+                setTimeout(resolve, 3000);
+            });
+            
+            // Try to start the system
+            const system = sceneEl.systems['mindar-image-system'];
+            if (system && system.start) {
+                await system.start();
+                console.log("A-Frame component started");
+            }
+            
+            // Add AR content using A-Frame approach
+            setupAFrameARContent();
+            
+            isARStarted = true;
+            loading.classList.add("hidden");
+            info.classList.remove("hidden");
+        }
+        
+        function setupARContent() {
+            if (!mindARInstance) return;
+            
+            // Get the anchor for target 0
+            const anchor = mindARInstance.addAnchor(0);
+            
+            // Create 3D content using Three.js
+            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+            const cube = new THREE.Mesh(geometry, material);
+            
+            // Add rotation animation
+            const animate = () => {
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+                requestAnimationFrame(animate);
+            };
+            animate();
+            
+            anchor.group.add(cube);
+            
+            // Handle anchor events
+            anchor.onTargetFound = () => {
+                console.log("Target found via MindAR");
+                found.classList.remove("hidden");
+                setTimeout(() => {
+                    alert("スタンプを獲得しました！🎉");
+                }, 1000);
+            };
+            
+            anchor.onTargetLost = () => {
+                console.log("Target lost via MindAR");
+                found.classList.add("hidden");
+            };
+        }
+        
+        function setupAFrameARContent() {
+            // Create A-Frame AR content
+            arContent.innerHTML = `
+                <a-entity mindar-image-target="targetIndex: 0">
+                    <a-gltf-model 
+                        gltf-model="#avatarModel"
+                        scale="0.3 0.3 0.3"
+                        position="0 0 0"
+                        rotation="0 0 0"
+                        animation-mixer
+                        visible="true">
+                    </a-gltf-model>
                     
-                    // Add target found/lost event listeners
-                    const target = document.querySelector('[mindar-image-target]');
+                    <a-text 
+                        value="スタンプGET!"
+                        position="0 0.5 0"
+                        align="center"
+                        color="red"
+                        scale="2 2 2"
+                        visible="true">
+                    </a-text>
                     
+                    <a-box 
+                        position="0 0.3 0" 
+                        scale="0.1 0.1 0.1" 
+                        color="gold"
+                        animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
+                        visible="true">
+                    </a-box>
+                </a-entity>
+            `;
+            
+            // Wait for content to be added to DOM
+            setTimeout(() => {
+                const target = arContent.querySelector('[mindar-image-target]');
+                if (target) {
                     target.addEventListener('targetFound', event => {
-                        console.log("Target found", event.detail.targetIndex);
+                        console.log("Target found via A-Frame", event.detail.targetIndex);
                         found.classList.remove("hidden");
-                        
-                        // Add celebration effect
                         setTimeout(() => {
                             alert("スタンプを獲得しました！🎉");
                         }, 1000);
                     });
                     
                     target.addEventListener('targetLost', event => {
-                        console.log("Target lost", event.detail.targetIndex);
+                        console.log("Target lost via A-Frame", event.detail.targetIndex);
                         found.classList.add("hidden");
                     });
-                    
-                }).catch(error => {
-                    console.error("Failed to start MindAR:", error);
-                    status.textContent = `AR初期化エラー: ${error.message}`;
-                });
-                
-            } catch (error) {
-                console.error("Error in initAR:", error);
-                status.textContent = `初期化エラー: ${error.message}`;
+                }
+            }, 1000);
+        }
+        
+        function handleError(error) {
+            console.error('Error details:', error);
+            
+            if (error.name === 'NotAllowedError') {
+                status.innerHTML = `
+                    <div>カメラのアクセス許可が拒否されました</div>
+                    <div style="font-size: 12px; margin-top: 10px;">
+                        ブラウザの設定でカメラを許可してください
+                    </div>
+                `;
+            } else if (error.name === 'NotFoundError') {
+                status.textContent = "カメラが見つかりません";
+            } else if (error.message.includes('Libraries failed to load')) {
+                status.innerHTML = `
+                    <div>必要なライブラリの読み込みに失敗しました</div>
+                    <div style="font-size: 12px; margin-top: 10px;">
+                        インターネット接続を確認してページを再読み込みしてください
+                    </div>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 5px 10px;">
+                        再読み込み
+                    </button>
+                `;
+            } else {
+                status.innerHTML = `
+                    <div>初期化エラー: ${error.message}</div>
+                    <div style="font-size: 12px; margin-top: 10px;">
+                        ページを再読み込みしてください
+                    </div>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 5px 10px;">
+                        再読み込み
+                    </button>
+                `;
             }
         }
         
         // Handle page visibility changes
         document.addEventListener('visibilitychange', () => {
-            if (!arSystem) return;
+            if (!isARStarted) return;
             
             if (document.visibilityState === 'visible') {
-                arSystem.start();
+                if (mindARInstance && mindARInstance.start) {
+                    mindARInstance.start().catch(console.error);
+                }
             } else {
-                arSystem.stop();
+                if (mindARInstance && mindARInstance.stop) {
+                    mindARInstance.stop();
+                }
             }
         });
         
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => {
-            if (arSystem) {
-                arSystem.stop();
+            if (mindARInstance && mindARInstance.stop) {
+                mindARInstance.stop();
             }
         });
         
@@ -241,6 +385,12 @@
         console.log("User Agent:", navigator.userAgent);
         console.log("HTTPS:", location.protocol === 'https:');
         console.log("Camera API available:", 'mediaDevices' in navigator);
+        
+        // Check if libraries are loading
+        setTimeout(() => {
+            console.log("AFRAME available:", !!window.AFRAME);
+            console.log("MINDAR available:", !!window.MINDAR);
+        }, 1000);
         
     </script>
 </body>
