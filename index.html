@@ -2,28 +2,28 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>My AR Troubleshooting</title>
+    <title>AR Crystal</title>
 
+    <!-- A-FrameとMindARのライブラリを読み込みます -->
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-master.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mind-ar-aframe.prod.js"></script>
   </head>
   <body>
+    <!-- 
+      ARの舞台を設定します。
+      注意！: imageTargetSrcの "./targets.mind" の部分は、
+      あなたのGitHubにあるマーカーファイル名と、大文字・小文字まで完全に一致させてください。
+    -->
     <a-scene mindar-image="imageTargetSrc: ./targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
+      <!-- AR用のカメラです -->
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
       
+      <!-- マーカーを定義します -->
       <a-entity mindar-image-target="targetIndex: 0">
         
+
         <a-gltf-model
-          src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/softmind/scene.gltf"
-          scale="0.3 0.3 0.3"
+          src="./crystal_stone_rock.glb"
+          scale="0.1 0.1 0.1"
           position="0 0 0"
-          rotation="0 0 0"
-          animation-mixer
-        ></a-gltf-model>
-
-      </a-entity>
-    </a-scene>
-  </body>
-
-</html>
