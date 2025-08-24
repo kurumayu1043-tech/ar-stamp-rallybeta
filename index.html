@@ -14,7 +14,6 @@
             overflow: hidden;
         }
         
-        /* カメラフィードの強制表示 */
         #arjs-video {
             position: fixed !important;
             top: 0 !important;
@@ -50,7 +49,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             color: white;
             display: flex;
             flex-direction: column;
@@ -61,7 +60,7 @@
         }
         
         #startButton {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
+            background: #4CAF50;
             border: none;
             color: white;
             padding: 20px 40px;
@@ -72,14 +71,8 @@
             margin: 20px 2px;
             cursor: pointer;
             border-radius: 10px;
-            box-shadow: 0 4px 16px rgba(76,175,80,0.4);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             touch-action: manipulation;
-            transition: all 0.3s ease;
-        }
-        
-        #startButton:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(76,175,80,0.6);
         }
         
         #info {
@@ -87,35 +80,48 @@
             top: 20px;
             left: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
             padding: 15px;
             border-radius: 10px;
-            font-size: 16px;
+            font-size: 14px;
             text-align: center;
             pointer-events: none;
             border: 2px solid #4CAF50;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+        }
+        
+        #stats {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00FF00;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-family: monospace;
+            pointer-events: none;
+            min-width: 200px;
+            border: 1px solid #00FF00;
         }
         
         #debug {
             position: fixed;
-            bottom: 80px;
+            bottom: 20px;
             left: 20px;
             right: 20px;
-            background: rgba(255, 0, 0, 0.8);
-            color: white;
+            background: rgba(0, 0, 0, 0.9);
+            color: #FFD700;
             padding: 10px;
             border-radius: 5px;
-            font-size: 12px;
+            font-size: 11px;
+            font-family: monospace;
             pointer-events: none;
-            max-height: 100px;
+            max-height: 150px;
             overflow-y: auto;
-            backdrop-filter: blur(5px);
+            border: 1px solid #FFD700;
         }
         
-        /* 改良されたマーカーガイド */
         #marker-guide {
             position: fixed;
             top: 50%;
@@ -123,98 +129,105 @@
             transform: translate(-50%, -50%);
             width: 250px;
             height: 250px;
-            border: 3px solid #4CAF50;
-            border-radius: 15px;
             pointer-events: none;
             z-index: 100;
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
-            transition: all 0.3s ease;
         }
         
-        #marker-guide::before {
-            content: "";
+        .corner {
             position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            border: 2px dashed rgba(76, 175, 80, 0.5);
-            border-radius: 20px;
-            animation: pulse 2s infinite;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #4CAF50;
         }
         
-        #marker-guide::after {
-            content: "HIROマーカーをここに配置";
-            position: absolute;
-            top: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #4CAF50;
-            font-size: 14px;
-            background: rgba(0,0,0,0.8);
-            padding: 8px 15px;
-            border-radius: 20px;
-            white-space: nowrap;
-            border: 1px solid #4CAF50;
+        .corner-tl {
+            top: 0;
+            left: 0;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .corner-tr {
+            top: 0;
+            right: 0;
+            border-left: none;
+            border-bottom: none;
+        }
+        
+        .corner-bl {
+            bottom: 0;
+            left: 0;
+            border-right: none;
+            border-top: none;
+        }
+        
+        .corner-br {
+            bottom: 0;
+            right: 0;
+            border-left: none;
+            border-top: none;
+        }
+        
+        #marker-guide.detected {
+            animation: pulse 0.5s;
+        }
+        
+        #marker-guide.detected .corner {
+            border-color: #00FF00;
+            box-shadow: 0 0 10px #00FF00;
         }
         
         @keyframes pulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 0.8; }
-        }
-        
-        /* マーカー認識時のエフェクト */
-        .marker-found {
-            border-color: #00FF00 !important;
-            box-shadow: 0 0 30px #00FF00 !important;
-            animation: found-pulse 1s infinite;
-        }
-        
-        @keyframes found-pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            0% { transform: translate(-50%, -50%) scale(1); }
             50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
         }
         
-        /* レスポンシブ調整 */
-        @media (max-width: 480px) {
-            #marker-guide {
-                width: 200px;
-                height: 200px;
-            }
-            
-            #info {
-                font-size: 14px;
-                padding: 12px;
-            }
+        #guide-text {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #4CAF50;
+            font-size: 12px;
+            background: rgba(0,0,0,0.9);
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
         }
         
         .hidden {
             display: none !important;
         }
         
-        /* パフォーマンス最適化 */
-        * {
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0);
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
+        #confidence-bar {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #444;
+            border-radius: 10px;
+            overflow: hidden;
         }
         
-        /* ダウンロードリンクのスタイル */
-        #download-link {
-            display: inline-block;
-            color: #4CAF50;
-            text-decoration: none;
-            padding: 10px 20px;
-            border: 1px solid #4CAF50;
-            border-radius: 8px;
-            margin-top: 15px;
-            transition: all 0.3s ease;
+        #confidence-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #FF0000, #FFD700, #00FF00);
+            transition: width 0.3s ease;
         }
         
-        #download-link:hover {
-            background: #4CAF50;
+        #confidence-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             color: white;
+            font-size: 10px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -222,22 +235,19 @@
     <div id="ui-overlay">
         <div id="loading">
             <h1>🎯 AR スタンプラリー</h1>
-            <div style="margin-bottom: 20px;">
-                <div style="font-size: 18px; margin-bottom: 10px;">📷 高精度マーカー認識</div>
-                <div style="font-size: 14px; opacity: 0.8;">Enhanced HIRO Detection System</div>
-            </div>
             <p id="status">タップして開始</p>
             <button id="startButton">📷 カメラを開始</button>
-            <div style="margin-top: 25px; font-size: 14px; opacity: 0.9; text-align: left; max-width: 300px;">
-                <div style="margin-bottom: 15px; color: #4CAF50; font-weight: bold;">🎯 認識精度向上のコツ：</div>
-                <div style="margin-bottom: 8px;">✓ 十分に明るい場所で使用</div>
-                <div style="margin-bottom: 8px;">✓ マーカーを平らに配置</div>
-                <div style="margin-bottom: 8px;">✓ 20-40cm程度の距離を保持</div>
-                <div style="margin-bottom: 8px;">✓ カメラを安定させる</div>
-                <div style="margin-bottom: 15px;">✓ マーカーの四角を画面内に完全に収める</div>
-                <a href="https://github.com/AR-js-org/AR.js/blob/master/data/images/hiro.png" 
+            <div style="margin-top: 20px; font-size: 14px; opacity: 0.8; max-width: 300px;">
+                <p style="color: #FFD700;">📌 重要な準備：</p>
+                <ul style="text-align: left; color: #CCC;">
+                    <li>HIROマーカーを印刷または画面表示</li>
+                    <li>明るい場所で使用</li>
+                    <li>マーカーを平らに置く</li>
+                    <li>カメラから20-40cmの距離</li>
+                </ul>
+                <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" 
                    target="_blank" 
-                   id="download-link">
+                   style="color: #4CAF50; text-decoration: none; display: inline-block; margin-top: 10px; padding: 8px 16px; border: 1px solid #4CAF50; border-radius: 5px;">
                     📥 HIROマーカーをダウンロード
                 </a>
             </div>
@@ -247,7 +257,28 @@
             <div id="info-text">ARカメラ起動中...</div>
         </div>
         
-        <div id="marker-guide" class="hidden"></div>
+        <div id="stats" class="hidden">
+            <div style="color: white; font-weight: bold; margin-bottom: 5px;">📊 認識状態</div>
+            <div id="stats-content">
+                FPS: <span id="fps">0</span><br>
+                検出強度: <span id="detection">0</span>%<br>
+                マーカー状態: <span id="marker-status">探索中</span><br>
+                カメラ: <span id="camera-status">準備中</span>
+            </div>
+        </div>
+        
+        <div id="marker-guide" class="hidden">
+            <div id="guide-text">HIROマーカーをここに合わせる</div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+        </div>
+        
+        <div id="confidence-bar" class="hidden">
+            <div id="confidence-fill"></div>
+            <div id="confidence-label">認識強度: 0%</div>
+        </div>
         
         <div id="debug" class="hidden">
             <div id="debug-text">Debug info</div>
@@ -256,150 +287,114 @@
 
     <!-- 最適化されたAR Scene -->
     <a-scene
+        id="arScene"
         embedded
         arjs="sourceType: webcam; 
-              trackingMethod: best; 
               debugUIEnabled: false; 
-              detectionMode: mono_and_matrix; 
-              matrixCodeType: 3x3; 
-              labelingMode: black_region; 
-              patternRatio: 0.75;
-              maxDetectionRate: 90;
-              canvasWidth: 800;
-              canvasHeight: 600;
-              cameraNear: 0.01;
-              cameraFar: 1000;
-              sourceWidth: 800;
-              sourceHeight: 600;"
+              detectionMode: mono; 
+              matrixCodeType: 3x3;
+              trackingMethod: best;
+              patternRatio: 0.5;
+              labelingMode: black_region;
+              processingMode: best;
+              maxDetectionRate: 60;
+              canvasWidth: 640;
+              canvasHeight: 480;
+              imageSmoothingEnabled: true;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
         loading-screen="enabled: false"
-        inspector="url: false"
-        keyboard-shortcuts="enabled: false"
-        screenshot="enabled: false"
         renderer="logarithmicDepthBuffer: true; 
-                  colorManagement: true; 
-                  sortObjects: true; 
+                  precision: high; 
                   antialias: true; 
                   alpha: true;
-                  precision: highp;
-                  powerPreference: high-performance;"
-        background="transparent: true"
-        style="z-index: 1;">
+                  colorManagement: true;"
+        stats>
         
-        <!-- 高精度HIROマーカー設定 -->
-        <a-marker 
-            preset="hiro" 
+        <!-- カスタムカメラ設定 -->
+        <a-camera-static/>
+        
+        <!-- 最適化されたHIROマーカー -->
+        <a-marker
+            preset="hiro"
             id="hiro-marker"
             smooth="true"
             smoothCount="10"
-            smoothTolerance="0.005"
-            smoothThreshold="1"
-            raycaster="objects: .clickable"
-            cursor="fuse: false; rayOrigin: mouse"
-            markerhandler>
+            smoothTolerance="0.01"
+            smoothThreshold="5"
+            size="1"
+            type="pattern"
+            url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.hiro">
             
-            <!-- メインの回転ボックス -->
-            <a-box 
-                position="0 0.5 0" 
-                scale="0.6 0.6 0.6"
-                color="#FFD700"
-                metalness="0.2"
-                roughness="0.1"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear"
-                shadow="cast: true; receive: false;">
+            <!-- メインのスタンプオブジェクト -->
+            <a-entity id="stamp-container" position="0 0 0">
                 
-                <!-- ボックス内部の小さな球 -->
-                <a-sphere 
-                    position="0 0 0" 
-                    radius="0.3" 
-                    color="#FF4444"
-                    material="emissive: #FF2222; emissiveIntensity: 0.3"
-                    animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000">
-                </a-sphere>
-            </a-box>
-            
-            <!-- 外側の回転リング -->
-            <a-torus 
-                position="0 0.5 0" 
-                color="#00FF88" 
-                radius="0.8" 
-                radius-tubular="0.08"
-                material="emissive: #00FF88; emissiveIntensity: 0.4"
-                animation="property: rotation; to: 360 0 360; loop: true; dur: 4000; easing: linear">
-            </a-torus>
-            
-            <!-- 上下に動く装飾球 -->
-            <a-sphere 
-                position="0 1.8 0" 
-                radius="0.15" 
-                color="#FFFF00"
-                material="emissive: #FFFF00; emissiveIntensity: 0.6"
-                animation="property: position; to: 0 0.2 0; dir: alternate; loop: true; dur: 2000">
-            </a-sphere>
-            
-            <!-- 成功テキスト -->
-            <a-text 
-                value="🎉 STAMP GET! 🎉"
-                position="0 1.2 0"
-                align="center"
-                color="#FF0000"
-                scale="2.5 2.5 2.5"
-                font="kframe"
-                material="emissive: #FF0000; emissiveIntensity: 0.3"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 6000">
-            </a-text>
-            
-            <!-- パーティクル風エフェクト -->
-            <a-cylinder 
-                position="1 0.5 0" 
-                radius="0.05" 
-                height="0.3" 
-                color="#FF69B4"
-                animation="property: rotation; to: 0 0 360; loop: true; dur: 1000">
-            </a-cylinder>
-            
-            <a-cylinder 
-                position="-1 0.5 0" 
-                radius="0.05" 
-                height="0.3" 
-                color="#FF69B4"
-                animation="property: rotation; to: 0 0 -360; loop: true; dur: 1000">
-            </a-cylinder>
-            
-            <a-cylinder 
-                position="0 0.5 1" 
-                radius="0.05" 
-                height="0.3" 
-                color="#FF69B4"
-                animation="property: rotation; to: 360 0 0; loop: true; dur: 1000">
-            </a-cylinder>
-            
-            <a-cylinder 
-                position="0 0.5 -1" 
-                radius="0.05" 
-                height="0.3" 
-                color="#FF69B4"
-                animation="property: rotation; to: -360 0 0; loop: true; dur: 1000">
-            </a-cylinder>
-            
-            <!-- 土台 -->
-            <a-cylinder 
-                position="0 0 0" 
-                radius="1.0" 
-                height="0.05" 
-                color="#8B4513"
-                shadow="receive: true; cast: false">
-            </a-cylinder>
+                <!-- ベースプラットフォーム -->
+                <a-cylinder
+                    position="0 0 0"
+                    radius="1"
+                    height="0.1"
+                    color="#2C3E50"
+                    shadow="receive: true">
+                </a-cylinder>
+                
+                <!-- メインスタンプ -->
+                <a-box
+                    id="main-stamp"
+                    position="0 0.5 0"
+                    scale="0.6 0.6 0.6"
+                    material="color: #FFD700; metalness: 0.3; roughness: 0.4"
+                    animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: easeInOutQuad"
+                    shadow>
+                </a-box>
+                
+                <!-- 装飾リング1 -->
+                <a-torus
+                    position="0 0.5 0"
+                    color="#FF6B6B"
+                    radius="0.7"
+                    radius-tubular="0.05"
+                    animation="property: rotation; to: 360 0 0; loop: true; dur: 2000">
+                </a-torus>
+                
+                <!-- 装飾リング2 -->
+                <a-torus
+                    position="0 0.5 0"
+                    color="#4ECDC4"
+                    radius="0.9"
+                    radius-tubular="0.03"
+                    animation="property: rotation; to: 0 360 360; loop: true; dur: 3000">
+                </a-torus>
+                
+                <!-- スタンプテキスト -->
+                <a-text
+                    value="STAMP GET!"
+                    position="0 1.3 0"
+                    align="center"
+                    color="#FFFFFF"
+                    font="kelsonsans"
+                    width="4"
+                    animation="property: scale; from: 1 1 1; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000">
+                </a-text>
+                
+                <!-- パーティクル効果 -->
+                <a-entity
+                    position="0 0.5 0"
+                    particle-system="preset: star; 
+                                   particleCount: 100; 
+                                   color: #FFD700,#FF6B6B; 
+                                   size: 0.5; 
+                                   duration: 0.1;
+                                   accelerationValue: 0,-5,0;
+                                   velocityValue: 0,3,0">
+                </a-entity>
+                
+            </a-entity>
             
         </a-marker>
         
-        <a-entity 
-            camera 
-            look-controls-enabled="false"
-            wasd-controls-enabled="false"
-            position="0 0 0">
-        </a-entity>
+        <a-entity camera></a-entity>
+        
     </a-scene>
 
     <script>
@@ -411,518 +406,284 @@
         const infoText = document.getElementById('info-text');
         const debug = document.getElementById('debug');
         const debugText = document.getElementById('debug-text');
+        const stats = document.getElementById('stats');
         const markerGuide = document.getElementById('marker-guide');
+        const confidenceBar = document.getElementById('confidence-bar');
+        const confidenceFill = document.getElementById('confidence-fill');
+        const confidenceLabel = document.getElementById('confidence-label');
         
-        let cameraStarted = false;
-        let arStarted = false;
-        let markerFound = false;
-        let markerLostCount = 0;
-        let markerFoundCount = 0;
         let debugLog = [];
+        let markerDetected = false;
+        let detectionConfidence = 0;
         let frameCount = 0;
-        let lastFrameTime = Date.now();
+        let lastTime = performance.now();
+        let fps = 0;
         
-        // デバイス検出（強化版）
-        const userAgent = navigator.userAgent.toLowerCase();
-        const isIOS = /ipad|iphone|ipod/.test(userAgent);
-        const isAndroid = /android/.test(userAgent);
-        const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
-        const isChrome = /chrome/.test(userAgent);
+        // デバイス検出
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
         const isMobile = isIOS || isAndroid;
         
-        // デバッグ機能強化
-        function updateDebug(message, level = 'info') {
+        // デバッグログ関数
+        function log(message, type = 'info') {
             const timestamp = new Date().toLocaleTimeString();
-            const emoji = level === 'error' ? '❌' : level === 'success' ? '✅' : level === 'warning' ? '⚠️' : '🔍';
-            const logEntry = `${emoji} ${timestamp}: ${message}`;
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            const logEntry = `${timestamp} ${icon} ${message}`;
             
             console.log(logEntry);
-            
             debugLog.push(logEntry);
-            if (debugLog.length > 15) debugLog.shift();
+            if (debugLog.length > 8) debugLog.shift();
             
             debugText.innerHTML = debugLog.join('<br>');
             debug.classList.remove('hidden');
-            
-            // FPS計算
+        }
+        
+        // FPS計算
+        function updateFPS() {
             frameCount++;
-            const now = Date.now();
-            if (now - lastFrameTime > 1000) {
-                const fps = Math.round(frameCount * 1000 / (now - lastFrameTime));
+            const currentTime = performance.now();
+            if (currentTime >= lastTime + 1000) {
+                fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+                document.getElementById('fps').textContent = fps;
                 frameCount = 0;
-                lastFrameTime = now;
-                
-                if (arStarted) {
-                    const fpsInfo = `📊 FPS: ${fps} | Found: ${markerFoundCount} | Lost: ${markerLostCount}`;
-                    debugLog[debugLog.length - 1] = fpsInfo;
-                    debugText.innerHTML = debugLog.join('<br>');
-                }
+                lastTime = currentTime;
             }
+            requestAnimationFrame(updateFPS);
         }
         
-        updateDebug(`Device: ${isIOS ? 'iOS' : isAndroid ? 'Android' : 'Desktop'} Browser: ${isChrome ? 'Chrome' : isSafari ? 'Safari' : 'Other'}`, 'info');
-        
-        // カメラ設定最適化
-        function getCameraConstraints() {
-            const baseConstraints = {
-                video: {
-                    width: { ideal: 800, max: 1920 },
-                    height: { ideal: 600, max: 1080 },
-                    frameRate: { ideal: 30, max: 60 }
-                }
-            };
-            
-            // デバイス別最適化
-            if (isIOS) {
-                baseConstraints.video.facingMode = { exact: 'environment' };
-                baseConstraints.video.width = { ideal: 640, max: 1280 };
-                baseConstraints.video.height = { ideal: 480, max: 720 };
-            } else if (isAndroid) {
-                baseConstraints.video.facingMode = { ideal: 'environment' };
-            } else {
-                baseConstraints.video.facingMode = 'environment';
-            }
-            
-            return baseConstraints;
+        // 認識強度の更新
+        function updateConfidence(value) {
+            detectionConfidence = Math.min(100, Math.max(0, value));
+            confidenceFill.style.width = detectionConfidence + '%';
+            confidenceLabel.textContent = `認識強度: ${Math.round(detectionConfidence)}%`;
+            document.getElementById('detection').textContent = Math.round(detectionConfidence);
         }
         
-        // 強化されたビデオ表示
-        function enhanceVideoDisplay() {
-            updateDebug("Enhancing video display...", 'info');
-            
-            const checkVideo = setInterval(() => {
-                const video = document.querySelector('#arjs-video') || 
-                            document.querySelector('video') || 
-                            document.querySelector('canvas + video');
-                            
-                if (video) {
-                    updateDebug(`Video found: ${video.videoWidth}x${video.videoHeight}`, 'success');
-                    
-                    // スタイル適用
-                    Object.assign(video.style, {
-                        position: 'fixed',
-                        top: '0',
-                        left: '0',
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        zIndex: '-1',
-                        visibility: 'visible',
-                        opacity: '1',
-                        display: 'block',
-                        transform: 'translateZ(0)',
-                        backfaceVisibility: 'hidden'
-                    });
-                    
-                    // イベントリスナー追加
-                    video.addEventListener('loadeddata', () => {
-                        updateDebug(`Video loaded: ${video.videoWidth}x${video.videoHeight}`, 'success');
-                        arStarted = true;
-                    });
-                    
-                    video.addEventListener('error', (e) => {
-                        updateDebug(`Video error: ${e.message}`, 'error');
-                    });
-                    
-                    clearInterval(checkVideo);
-                } else {
-                    updateDebug("Video element not found, retrying...", 'warning');
-                }
-            }, 200);
-            
-            setTimeout(() => {
-                clearInterval(checkVideo);
-                if (!arStarted) {
-                    updateDebug("Video detection timeout", 'error');
-                }
-            }, 15000);
-        }
-        
-        // マーカーイベントハンドラー（強化版）
-        AFRAME.registerComponent('markerhandler', {
-            init: function () {
-                const marker = this.el;
-                
-                marker.addEventListener('markerFound', function() {
-                    markerFoundCount++;
-                    markerFound = true;
-                    updateDebug(`🎉 HIRO marker FOUND! (${markerFoundCount} times)`, 'success');
-                    
-                    // UI更新
-                    infoText.innerHTML = `
-                        <div style="color: #00FF00; font-size: 22px; margin-bottom: 10px;">
-                            🎉 スタンプゲット！
-                        </div>
-                        <div style="font-size: 14px;">
-                            マーカーを安定して保持してください
-                        </div>
-                        <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">
-                            認識回数: ${markerFoundCount} | 精度: ${Math.round((markerFoundCount/(markerFoundCount+markerLostCount))*100) || 100}%
-                        </div>
-                    `;
-                    
-                    info.style.borderColor = "#00FF00";
-                    info.style.backgroundColor = "rgba(0, 255, 0, 0.1)";
-                    markerGuide.classList.add('marker-found');
-                });
-                
-                marker.addEventListener('markerLost', function() {
-                    markerLostCount++;
-                    markerFound = false;
-                    updateDebug(`❌ HIRO marker lost (${markerLostCount} times)`, 'warning');
-                    
-                    // UI更新
-                    infoText.innerHTML = `
-                        <div style="font-size: 16px; margin-bottom: 8px;">
-                            HIROマーカーを中央のガイドに合わせてください
-                        </div>
-                        <div style="font-size: 13px; color: #FFA500; margin-bottom: 8px;">
-                            💡 コツ：マーカーの四隅が画面内に完全に入るようにしてください
-                        </div>
-                        <div style="font-size: 12px; opacity: 0.7;">
-                            認識履歴: 成功 ${markerFoundCount} | 失敗 ${markerLostCount}
-                        </div>
-                    `;
-                    
-                    info.style.borderColor = "#4CAF50";
-                    info.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
-                    markerGuide.classList.remove('marker-found');
-                });
-            }
-        });
-        
-        // メインの開始処理
+        // カメラ開始処理
         startButton.addEventListener('click', async function() {
-            updateDebug("Start button clicked", 'info');
+            log('カメラ起動開始');
             status.textContent = "カメラにアクセス中...";
             
             try {
-                // カメラ許可取得
-                updateDebug("Requesting camera access with optimized constraints...", 'info');
+                // カメラストリームを取得
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280, max: 1920 },
+                        height: { ideal: 720, max: 1080 },
+                        frameRate: { ideal: 30, max: 60 }
+                    }
+                };
                 
-                const constraints = getCameraConstraints();
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                log('カメラアクセス成功', 'success');
                 
+                // ストリーム情報をログ
                 const track = stream.getVideoTracks()[0];
                 const settings = track.getSettings();
-                updateDebug(`Camera: ${settings.width}x${settings.height}@${settings.frameRate}fps, facing: ${settings.facingMode}`, 'success');
+                log(`解像度: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
                 
-                // ストリーム停止（AR.jsが管理するため）
+                // AR.jsに任せるためストリームを停止
                 stream.getTracks().forEach(track => track.stop());
-                cameraStarted = true;
                 
                 // UI切り替え
-                status.textContent = "ARエンジンを初期化中...";
-                updateDebug("Starting AR.js initialization...", 'info');
-                
-                // 強化されたビデオ表示を開始
-                enhanceVideoDisplay();
-                
-                // デバイス別待機時間
-                const waitTime = isMobile ? (isIOS ? 6000 : 5000) : 3000;
-                updateDebug(`Waiting ${waitTime}ms for AR initialization...`, 'info');
-                
                 setTimeout(() => {
                     loading.classList.add('hidden');
                     info.classList.remove('hidden');
+                    stats.classList.remove('hidden');
                     markerGuide.classList.remove('hidden');
+                    confidenceBar.classList.remove('hidden');
                     
                     infoText.innerHTML = `
-                        <div style="color: #4CAF50; font-size: 18px; margin-bottom: 10px;">
-                            📷 ARカメラが起動しました
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            HIROマーカーを中央のガイドに合わせてください
-                        </div>
-                        <div style="font-size: 13px; opacity: 0.8;">
-                            💡 明るい場所で、20-40cm程度の距離を保ってください
-                        </div>
+                        <div style="font-size: 16px; color: #4CAF50;">✨ ARカメラ起動完了</div>
+                        <div style="font-size: 12px; margin-top: 5px;">HIROマーカーをガイド枠内に配置してください</div>
                     `;
                     
-                    updateDebug("UI switched, AR ready for marker detection", 'success');
+                    document.getElementById('camera-status').textContent = '動作中';
+                    document.getElementById('camera-status').style.color = '#00FF00';
                     
-                    // AR状態監視開始
-                    monitorARStatus();
+                    // AR.jsイベントリスナー設定
+                    setupARListeners();
                     
-                }, waitTime);
+                    // FPS計測開始
+                    updateFPS();
+                    
+                    // 定期的な状態チェック
+                    setInterval(checkARHealth, 2000);
+                    
+                }, isMobile ? 3000 : 2000);
                 
             } catch (error) {
-                updateDebug(`Camera error: ${error.name} - ${error.message}`, 'error');
+                log(`カメラエラー: ${error.message}`, 'error');
                 handleCameraError(error);
             }
         });
         
-        // AR状態監視
-        function monitorARStatus() {
-            const checkInterval = setInterval(() => {
-                const scene = document.querySelector('a-scene');
-                const canvas = scene ? scene.canvas : null;
-                const video = document.querySelector('#arjs-video') || document.querySelector('video');
-                
-                if (arStarted && video && canvas) {
-                    updateDebug("✅ AR system fully operational", 'success');
-                    clearInterval(checkInterval);
-                } else if (Date.now() - lastFrameTime > 10000) {
-                    updateDebug("⚠️ AR initialization taking longer than expected", 'warning');
+        // ARイベントリスナー設定
+        function setupARListeners() {
+            const marker = document.getElementById('hiro-marker');
+            const scene = document.querySelector('a-scene');
+            
+            if (!marker) {
+                log('マーカー要素が見つかりません', 'error');
+                return;
+            }
+            
+            // マーカー検出イベント
+            marker.addEventListener('markerFound', () => {
+                if (!markerDetected) {
+                    markerDetected = true;
+                    log('HIROマーカー検出！', 'success');
+                    
+                    markerGuide.classList.add('detected');
+                    document.getElementById('marker-status').textContent = '検出中';
+                    document.getElementById('marker-status').style.color = '#00FF00';
                     
                     infoText.innerHTML = `
-                        <div style="color: #FFA500; margin-bottom: 10px;">
-                            ARの初期化に時間がかかっています...
-                        </div>
-                        <div style="font-size: 14px; margin-bottom: 15px;">
-                            しばらくお待ちください。改善されない場合は再読み込みをお試しください。
-                        </div>
-                        <div style="font-size: 12px;">
-                            <button onclick="location.reload()" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                🔄 再読み込み
-                            </button>
-                        </div>
+                        <div style="font-size: 18px; color: #00FF00;">🎉 スタンプ発見！</div>
+                        <div style="font-size: 12px; margin-top: 5px;">マーカーを安定させてください</div>
                     `;
+                    
+                    info.style.borderColor = '#00FF00';
+                    info.style.boxShadow = '0 0 20px #00FF00';
+                    
+                    // 認識強度を段階的に上げる
+                    let confidence = 0;
+                    const increaseConfidence = setInterval(() => {
+                        confidence += 10;
+                        updateConfidence(confidence);
+                        if (confidence >= 100) {
+                            clearInterval(increaseConfidence);
+                        }
+                    }, 100);
                 }
-            }, 2000);
+            });
+            
+            // マーカーロストイベント
+            marker.addEventListener('markerLost', () => {
+                if (markerDetected) {
+                    markerDetected = false;
+                    log('マーカーロスト');
+                    
+                    markerGuide.classList.remove('detected');
+                    document.getElementById('marker-status').textContent = '探索中';
+                    document.getElementById('marker-status').style.color = '#FFD700';
+                    
+                    infoText.innerHTML = `
+                        <div style="font-size: 14px;">マーカーを探しています...</div>
+                        <div style="font-size: 12px; margin-top: 5px; color: #888;">ガイド枠内にマーカーを配置してください</div>
+                    `;
+                    
+                    info.style.borderColor = '#4CAF50';
+                    info.style.boxShadow = 'none';
+                    
+                    // 認識強度を段階的に下げる
+                    let confidence = detectionConfidence;
+                    const decreaseConfidence = setInterval(() => {
+                        confidence -= 20;
+                        updateConfidence(confidence);
+                        if (confidence <= 0) {
+                            clearInterval(decreaseConfidence);
+                        }
+                    }, 100);
+                }
+            });
+            
+            // シーンイベント
+            if (scene) {
+                scene.addEventListener('arjs-video-loaded', () => {
+                    log('AR.jsビデオ読み込み完了', 'success');
+                });
+                
+                scene.addEventListener('camera-init', () => {
+                    log('ARカメラ初期化完了', 'success');
+                });
+            }
+        }
+        
+        // AR動作状態チェック
+        function checkARHealth() {
+            const video = document.querySelector('#arjs-video') || document.querySelector('video');
+            const canvas = document.querySelector('.a-canvas');
+            
+            if (video && video.readyState >= 2) {
+                document.getElementById('camera-status').textContent = '正常';
+                document.getElementById('camera-status').style.color = '#00FF00';
+            } else {
+                document.getElementById('camera-status').textContent = '確認中';
+                document.getElementById('camera-status').style.color = '#FFD700';
+            }
+            
+            // マーカー未検出が続く場合のヒント表示
+            if (!markerDetected && detectionConfidence === 0) {
+                const hints = [
+                    "明るい場所に移動してみてください",
+                    "マーカーとの距離を20-40cmに調整",
+                    "マーカーが平らになっているか確認",
+                    "カメラレンズが汚れていないか確認",
+                    "マーカーの印刷品質を確認"
+                ];
+                const randomHint = hints[Math.floor(Math.random() * hints.length)];
+                document.getElementById('guide-text').textContent = `💡 ${randomHint}`;
+            }
         }
         
         // カメラエラーハンドリング
         function handleCameraError(error) {
-            const errorMap = {
-                'NotAllowedError': {
-                    title: 'カメラの許可が拒否されました',
-                    solution: 'ブラウザの設定でカメラアクセスを許可してください'
-                },
-                'NotFoundError': {
-                    title: 'カメラが見つかりません',
-                    solution: 'デバイスにカメラが接続されていることを確認してください'
-                },
-                'NotSupportedError': {
-                    title: 'ブラウザがカメラをサポートしていません',
-                    solution: 'Chrome、Firefox、Edge、Safariをお試しください'
-                },
-                'OverconstrainedError': {
-                    title: 'カメラの設定に問題があります',
-                    solution: '別のカメラまたはブラウザをお試しください'
-                }
-            };
+            let errorMessage = "";
+            let solution = "";
             
-            const errorInfo = errorMap[error.name] || {
-                title: 'カメラエラーが発生しました',
-                solution: 'ページを再読み込みしてお試しください'
-            };
+            switch (error.name) {
+                case 'NotAllowedError':
+                    errorMessage = "カメラの許可が拒否されました";
+                    solution = "ブラウザ設定でカメラを許可してください";
+                    break;
+                case 'NotFoundError':
+                    errorMessage = "カメラが見つかりません";
+                    solution = "デバイスにカメラが接続されているか確認してください";
+                    break;
+                case 'NotSupportedError':
+                case 'TypeError':
+                    errorMessage = "このブラウザはサポートされていません";
+                    solution = "Chrome、Firefox、またはSafariをお使いください";
+                    break;
+                default:
+                    errorMessage = "カメラの起動に失敗しました";
+                    solution = "ページを再読み込みしてお試しください";
+            }
             
             status.innerHTML = `
-                <div style="color: #ff4444; font-size: 18px; margin-bottom: 15px;">${errorInfo.title}</div>
-                <div style="font-size: 14px; margin-bottom: 20px; line-height: 1.4;">${errorInfo.solution}</div>
-                <button onclick="location.reload()" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                <div style="color: #FF4444; font-size: 18px; margin-bottom: 10px;">⚠️ ${errorMessage}</div>
+                <div style="font-size: 14px; margin-bottom: 15px; color: #CCC;">${solution}</div>
+                <button onclick="location.reload()" 
+                        style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
                     🔄 再読み込み
                 </button>
             `;
         }
         
-        // 互換性チェック（強化版）
+        // ページ読み込み時の初期化
         window.addEventListener('load', () => {
-            updateDebug("Running enhanced compatibility checks...", 'info');
+            log(`デバイス: ${isMobile ? (isIOS ? 'iOS' : 'Android') : 'Desktop'}`);
+            log(`ブラウザ: ${navigator.userAgent.substring(0, 50)}...`);
             
-            const checks = {
-                'HTTPS/Localhost': location.protocol === 'https:' || location.hostname === 'localhost',
-                'MediaDevices': 'mediaDevices' in navigator,
-                'getUserMedia': navigator.mediaDevices && 'getUserMedia' in navigator.mediaDevices,
-                'WebGL': !!window.WebGLRenderingContext,
-                'WebGL2': !!window.WebGL2RenderingContext,
-                'A-Frame': typeof AFRAME !== 'undefined',
-                'AR.js': typeof THREEx !== 'undefined'
-            };
-            
-            const passedChecks = Object.entries(checks).filter(([key, value]) => value).map(([key]) => key);
-            const failedChecks = Object.entries(checks).filter(([key, value]) => !value).map(([key]) => key);
-            
-            if (failedChecks.length > 0) {
-                updateDebug(`❌ Failed: ${failedChecks.join(', ')}`, 'error');
-                updateDebug(`✅ Passed: ${passedChecks.join(', ')}`, 'success');
-            } else {
-                updateDebug(`✅ All ${Object.keys(checks).length} compatibility checks passed`, 'success');
+            // HTTPS確認
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                log('⚠️ HTTPSが必要です', 'error');
+                status.innerHTML = `
+                    <div style="color: #FF4444;">セキュアな接続（HTTPS）が必要です</div>
+                `;
             }
             
-            // モバイル最適化適用
-            if (isMobile) {
-                updateDebug(`Mobile optimizations applied for ${isIOS ? 'iOS' : 'Android'}`, 'info');
-                
-                // モバイル用の追加設定
-                document.body.style.touchAction = 'manipulation';
-                document.body.style.userSelect = 'none';
-                
-                // iOS Safari特有の問題対策
-                if (isIOS && isSafari) {
-                    updateDebug("Applying iOS Safari specific fixes", 'info');
-                    
-                    // viewport meta tag 強制更新
-                    const viewport = document.querySelector('meta[name="viewport"]');
-                    if (viewport) {
-                        viewport.setAttribute('content', 
-                            'width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no, viewport-fit=cover'
-                        );
-                    }
-                }
-            }
-            
-            // WebGL コンテキスト情報取得
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                if (gl) {
-                    const renderer = gl.getParameter(gl.RENDERER);
-                    const vendor = gl.getParameter(gl.VENDOR);
-                    updateDebug(`GPU: ${renderer} (${vendor})`, 'info');
-                }
-            } catch (e) {
-                updateDebug("Could not get WebGL context info", 'warning');
-            }
-            
-            // A-Frame シーンの初期化監視
-            const scene = document.querySelector('a-scene');
-            if (scene) {
-                scene.addEventListener('loaded', () => {
-                    updateDebug("A-Frame scene loaded successfully", 'success');
-                });
-                
-                scene.addEventListener('enter-vr', () => {
-                    updateDebug("AR mode activated", 'success');
-                });
-                
-                // AR.js の初期化完了を監視
-                scene.addEventListener('arjs-video-loaded', (e) => {
-                    updateDebug("AR.js video stream loaded", 'success');
-                    arStarted = true;
-                });
+            // WebRTC対応確認
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                log('WebRTC非対応', 'error');
+                status.innerHTML = `
+                    <div style="color: #FF4444;">このブラウザはカメラ機能に対応していません</div>
+                `;
             }
         });
-        
-        // パフォーマンス監視
-        let performanceData = {
-            frameDrops: 0,
-            avgFPS: 0,
-            fpsHistory: []
-        };
-        
-        function monitorPerformance() {
-            if (!arStarted) return;
-            
-            const now = performance.now();
-            const timeDelta = now - (monitorPerformance.lastTime || now);
-            monitorPerformance.lastTime = now;
-            
-            if (timeDelta > 0) {
-                const currentFPS = 1000 / timeDelta;
-                performanceData.fpsHistory.push(currentFPS);
-                
-                if (performanceData.fpsHistory.length > 30) {
-                    performanceData.fpsHistory.shift();
-                }
-                
-                performanceData.avgFPS = performanceData.fpsHistory.reduce((a, b) => a + b, 0) / performanceData.fpsHistory.length;
-                
-                if (currentFPS < 15) {
-                    performanceData.frameDrops++;
-                    if (performanceData.frameDrops % 10 === 0) {
-                        updateDebug(`Performance warning: ${performanceData.frameDrops} frame drops, avg FPS: ${Math.round(performanceData.avgFPS)}`, 'warning');
-                    }
-                }
-            }
-            
-            requestAnimationFrame(monitorPerformance);
-        }
-        
-        // パフォーマンス監視開始
-        setTimeout(() => {
-            if (arStarted) {
-                monitorPerformance();
-            }
-        }, 5000);
-        
-        // エラーハンドリング強化
-        window.addEventListener('error', (e) => {
-            updateDebug(`JS Error: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
-        });
-        
-        window.addEventListener('unhandledrejection', (e) => {
-            updateDebug(`Unhandled Promise: ${e.reason}`, 'error');
-        });
-        
-        // ページ離脱時のクリーンアップ
-        window.addEventListener('beforeunload', () => {
-            if (cameraStarted) {
-                updateDebug("Cleaning up resources...", 'info');
-            }
-        });
-        
-        // マーカー認識品質向上のための追加処理
-        function optimizeMarkerDetection() {
-            // AR.js の設定を動的に調整
-            if (typeof ARjs !== 'undefined' && ARjs.Context) {
-                updateDebug("Applying dynamic AR.js optimizations", 'info');
-                
-                // 検出感度を動的調整
-                const arContext = document.querySelector('a-scene').systems.arjs.data;
-                if (arContext) {
-                    // より積極的な検出設定
-                    arContext.maxDetectionRate = 120;
-                    arContext.canvasWidth = Math.min(window.innerWidth, 1024);
-                    arContext.canvasHeight = Math.min(window.innerHeight, 768);
-                }
-            }
-            
-            // 照明条件の最適化提案
-            if ('AmbientLightSensor' in window) {
-                try {
-                    const sensor = new AmbientLightSensor();
-                    sensor.addEventListener('reading', () => {
-                        const lux = sensor.illuminance;
-                        if (lux < 100) {
-                            updateDebug(`Low light detected (${Math.round(lux)} lux). Consider brighter lighting.`, 'warning');
-                        } else if (lux > 10000) {
-                            updateDebug(`Very bright light detected (${Math.round(lux)} lux). May cause glare.`, 'warning');
-                        }
-                    });
-                    sensor.start();
-                } catch (e) {
-                    // Ambient light sensor not supported
-                }
-            }
-        }
-        
-        // 最適化を遅延実行
-        setTimeout(optimizeMarkerDetection, 2000);
-        
-        // ユーザビリティ向上：マーカーガイダンス
-        let guidanceTimer;
-        function startGuidance() {
-            if (guidanceTimer) clearInterval(guidanceTimer);
-            
-            let guidanceStep = 0;
-            const guidanceMessages = [
-                "📱 デバイスを水平に保ってください",
-                "💡 十分な明るさがあることを確認してください", 
-                "📏 マーカーから20-40cm程度離れてください",
-                "⏹️ マーカーの四角が完全に画面内に入っていることを確認してください",
-                "🎯 中央のガイドにマーカーを合わせてください"
-            ];
-            
-            guidanceTimer = setInterval(() => {
-                if (!markerFound && arStarted) {
-                    const message = guidanceMessages[guidanceStep % guidanceMessages.length];
-                    
-                    infoText.innerHTML = `
-                        <div style="margin-bottom: 10px;">HIROマーカーを探しています...</div>
-                        <div style="font-size: 14px; color: #FFA500; margin-bottom: 8px;">${message}</div>
-                        <div style="font-size: 12px; opacity: 0.7;">認識状態: 検索中... (ヒント ${guidanceStep + 1}/${guidanceMessages.length})</div>
-                    `;
-                    
-                    guidanceStep++;
-                }
-            }, 5000);
-        }
-        
-        // ガイダンス開始（AR起動後）
-        setTimeout(() => {
-            if (arStarted && !markerFound) {
-                startGuidance();
-            }
-        }, 8000);
+    </script>
+</body>
+</html>
+
