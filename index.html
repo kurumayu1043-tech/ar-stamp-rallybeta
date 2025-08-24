@@ -4,23 +4,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AR Crystal</title>
 
-    <!-- A-FrameとMindARのライブラリを読み込みます -->
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-master.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mind-ar-aframe.prod.js"></script>
   </head>
   <body>
-   
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: /ar-stamp-rallybeta/targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
-      <!-- AR用のカメラです -->
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
       
-      <!-- マーカーを定義します -->
       <a-entity mindar-image-target="targetIndex: 0">
         
-     
         <a-gltf-model
-          src="./crystal_stone_rock.glb"
+          src="/ar-stamp-rallybeta/crystal_stone_rock.glb"
           scale="0.1 0.1 0.1"
           position="0 0 0"
           rotation="0 0 0"
