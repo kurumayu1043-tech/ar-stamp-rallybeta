@@ -2,15 +2,47 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
     <title>AR Stamp Rally</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
             background: #000;
+            overflow: hidden;
+        }
+        
+        /* スマホでカメラフィードを確実に表示 */
+        #arjs-video {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            z-index: -1 !important;
+        }
+        
+        /* A-Frameキャンバスを確実に表示 */
+        .a-canvas {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 1 !important;
+        }
+        
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+            pointer-events: none;
         }
         
         #loading {
@@ -26,25 +58,23 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            pointer-events: all;
         }
         
         #startButton {
             background: #4CAF50;
             border: none;
             color: white;
-            padding: 15px 32px;
+            padding: 20px 40px;
             text-align: center;
             text-decoration: none;
             display: inline-block;
-            font-size: 16px;
+            font-size: 18px;
             margin: 20px 2px;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        
-        #startButton:hover {
-            background: #45a049;
+            touch-action: manipulation;
         }
         
         #info {
@@ -56,382 +86,464 @@
             color: white;
             padding: 15px;
             border-radius: 10px;
-            z-index: 100;
-            font-size: 14px;
+            font-size: 16px;
             text-align: center;
+            pointer-events: none;
+            border: 2px solid #4CAF50;
         }
         
-        #stampCounter {
+        #debug {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
+            left: 20px;
             right: 20px;
-            background: rgba(76, 175, 80, 0.9);
+            background: rgba(255, 0, 0, 0.8);
             color: white;
-            padding: 10px 15px;
-            border-radius: 20px;
-            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        /* マーカー認識強化用のオーバーレイ */
+        #marker-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border: 3px dashed #4CAF50;
+            border-radius: 10px;
+            pointer-events: none;
             z-index: 100;
+        }
+        
+        #marker-overlay::after {
+            content: "HIROマーカーをここに";
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #4CAF50;
+            font-size: 14px;
+            background: rgba(0,0,0,0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
         }
         
         .hidden {
             display: none !important;
         }
         
-        .celebration {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 15px;
-            font-size: 24px;
-            font-weight: bold;
-            z-index: 200;
-            animation: bounce 0.6s ease-in-out;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        /* スマホ用の強制表示 */
+        @media (max-width: 768px) {
+            #arjs-video, .a-canvas {
+                -webkit-transform: translateZ(0) !important;
+                transform: translateZ(0) !important;
+                -webkit-backface-visibility: hidden !important;
+                backface-visibility: hidden !important;
+                will-change: transform !important;
+            }
         }
         
-        @keyframes bounce {
-            0%, 20%, 60%, 100% {
-                transform: translate(-50%, -50%) translateY(0);
-            }
-            40% {
-                transform: translate(-50%, -50%) translateY(-20px);
-            }
-            80% {
-                transform: translate(-50%, -50%) translateY(-10px);
-            }
-        }
     </style>
 </head>
 <body>
-    <div id="loading">
-        <h1>🎯 AR スタンプラリー</h1>
-        <p>HIROマーカーを探してスタンプを集めよう！</p>
-        <p style="font-size: 14px; opacity: 0.8;">カメラのアクセス許可が必要です</p>
-        <button id="startButton">🚀 ARを開始</button>
-        <div id="status">準備中...</div>
-        <div style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
-            <a href="https://github.com/AR-js-org/AR.js/blob/master/data/images/hiro.png" target="_blank" style="color: #4CAF50;">
-                HIROマーカーをダウンロード
-            </a>
+    <div id="ui-overlay">
+        <div id="loading">
+            <h1>🎯 AR スタンプラリー</h1>
+            <p id="status">タップして開始</p>
+            <button id="startButton">📷 カメラを開始</button>
+            <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
+                <p>HIROマーカー認識のコツ：</p>
+                <p>• 明るい場所で使用</p>
+                <p>• マーカーを平らに置く</p>
+                <p>• 30cm程度の距離を保つ</p>
+                <a href="https://github.com/AR-js-org/AR.js/blob/master/data/images/hiro.png" target="_blank" style="color: #4CAF50;">
+                    📥 HIROマーカーをダウンロード
+                </a>
+            </div>
+        </div>
+        
+        <div id="info" class="hidden">
+            <div id="info-text">ARカメラ起動中...</div>
+        </div>
+        
+        <div id="marker-overlay" class="hidden"></div>
+        
+        <div id="debug" class="hidden">
+            <div id="debug-text">Debug info</div>
         </div>
     </div>
-    
-    <div id="info" class="hidden">
-        <div>📷 HIROマーカーをカメラに向けてください</div>
-        <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
-            マーカーが見つからない場合は、照明を調整してください
-        </div>
-    </div>
-    
-    <div id="stampCounter" class="hidden">
-        🏆 スタンプ: <span id="count">0</span>/3
-    </div>
-    
-    <a-scene 
-        embedded 
-        arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/data/data/camera_para.dat; maxDetectionRate: 60; canvasWidth: 640; canvasHeight: 480;"
+
+    <!-- AR Scene - マーカー認識を強化 -->
+    <a-scene
+        embedded
+        arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; labelingMode: black_region; patternRatio: 0.8; maxDetectionRate: 60; canvasWidth: 640; canvasHeight: 480;"
         vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true; alpha: true; antialias: true; colorManagement: true; sortObjects: true;"
-        background="transparent: true"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"
+        device-orientation-permission-ui="enabled: false"
         loading-screen="enabled: false"
-        inspector="url: false">
+        inspector="url: false"
+        keyboard-shortcuts="enabled: false"
+        screenshot="enabled: false"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true; sortObjects: true; antialias: true; alpha: true;"
+        background="transparent: true"
+        style="z-index: 1;">
         
-        <a-assets timeout="30000">
-            <audio id="successSound" preload="auto">
-                <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhFjiS2O7FeiaHJjm8cH7AyRJGYxP0j1VC8nNxJi9rOxdRSgZiJh6FCBABHJNuqgYyWwN/gEUf3mNL86RFHlNdGxQmCj/Jt8Q2vJO7ygWmrDJZCJFOPFNdOkn+qJ9LdNNcHV3RMfwgT7WQG7F0K/foBDvwuoCL3HxTi7PQ8WEfHVt9YYjdlZFn1xW3KtL/vJjGcHf6+tz7yZLuE6fZXnDRNZzFNeTtNJLZgUUMjm2yg3qEoHnGRl9F3cUFLH7m8fEt7tJP7e6V6/f8sHxKMhvGlJlHZ2J4GYnEXVfKxGKaFqNBvEeGrOHjgWO2fwJE3FHdz5WMCYdWm1rFOZa+gEA1WUGcAzwJjNpJNuKyY5fdfDwHGJKhfYRiMHpMdLT7y3c0hgHUKgWJsoBXXOdRIGpKfKJgL4kDfvLGp9sQMhcqNLYLbqKC4mQ2Pd7M8qKDp3BVJjWW5Bs8R3LPhdfvHmH+QhGzZF8=" type="audio/wav">
-            </audio>
-        </a-assets>
-        
-        <a-marker preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
-            <!-- スタンプ1: 回転する宝箱 -->
+        <!-- マーカー認識を強化したHIROマーカー -->
+        <a-marker 
+            preset="hiro" 
+            id="hiro-marker"
+            smooth="true"
+            smoothCount="5"
+            smoothTolerance="0.01"
+            smoothThreshold="2"
+            raycaster="objects: .clickable"
+            cursor="fuse: false; rayOrigin: mouse;">
+            
+            <!-- より目立つ3Dオブジェクト -->
             <a-box 
-                id="stamp1"
                 position="0 0.5 0" 
-                scale="0.3 0.3 0.3"
+                scale="0.8 0.8 0.8"
                 color="#FFD700"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"
-                shadow="cast: true"
-                class="stamp-object">
+                metalness="0.1"
+                roughness="0.3"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"
+                shadow="cast: true; receive: false;">
             </a-box>
             
-            <!-- スタンプのテキスト -->
+            <!-- 回転する装飾リング -->
+            <a-torus 
+                position="0 0.5 0" 
+                color="#FF4444" 
+                radius="0.8" 
+                radius-tubular="0.1"
+                animation="property: rotation; to: 360 0 0; loop: true; dur: 2000">
+            </a-torus>
+            
+            <!-- 大きくて目立つテキスト -->
             <a-text 
-                value="🎉 スタンプ GET! 🎉"
-                position="0 1.2 0"
+                value="🎉 STAMP! 🎉"
+                position="0 1.5 0"
                 align="center"
-                color="#FF4444"
-                scale="1.5 1.5 1.5"
-                animation="property: scale; to: 2 2 2; dir: alternate; loop: true; dur: 1000"
-                font="kframe">
+                color="#FF0000"
+                scale="3 3 3"
+                font="kframe"
+                animation="property: scale; to: 3.5 3.5 3.5; dir: alternate; loop: true; dur: 1000">
             </a-text>
             
-            <!-- 装飾的なパーティクル -->
+            <!-- 発光エフェクト用の球体 -->
             <a-sphere 
-                position="0.5 0.8 0" 
-                scale="0.1 0.1 0.1" 
-                color="#FF69B4"
-                animation="property: position; to: 0.5 1.5 0; dir: alternate; loop: true; dur: 2000">
-            </a-sphere>
-            <a-sphere 
-                position="-0.5 0.8 0" 
-                scale="0.1 0.1 0.1" 
-                color="#00CED1"
-                animation="property: position; to: -0.5 1.5 0; dir: alternate; loop: true; dur: 1500">
+                position="0 2 0" 
+                radius="0.2" 
+                color="#FFFF00"
+                material="emissive: #FFFF00; emissiveIntensity: 0.5"
+                animation="property: position; to: 0 2.5 0; dir: alternate; loop: true; dur: 1500">
             </a-sphere>
             
-            <!-- 土台 -->
+            <!-- 土台（影を受ける） -->
             <a-cylinder 
                 position="0 0 0" 
-                radius="0.8" 
+                radius="1.2" 
                 height="0.1" 
                 color="#8B4513"
-                shadow="receive: true">
+                shadow="receive: true; cast: false">
             </a-cylinder>
+            
         </a-marker>
         
-        <a-entity camera></a-entity>
+        <a-entity 
+            camera 
+            look-controls-enabled="false"
+            wasd-controls-enabled="false">
+        </a-entity>
     </a-scene>
 
     <script>
-        const startButton = document.querySelector("#startButton");
-        const loading = document.querySelector("#loading");
-        const info = document.querySelector("#info");
-        const status = document.querySelector("#status");
-        const stampCounter = document.querySelector("#stampCounter");
-        const countElement = document.querySelector("#count");
+        const startButton = document.getElementById('startButton');
+        const loading = document.getElementById('loading');
+        const info = document.getElementById('info');
+        const status = document.getElementById('status');
+        const infoText = document.getElementById('info-text');
+        const debug = document.getElementById('debug');
+        const debugText = document.getElementById('debug-text');
+        const markerOverlay = document.getElementById('marker-overlay');
         
-        let stampCount = 0;
-        let isMarkerVisible = false;
-        let celebrationTimeout = null;
+        let cameraStarted = false;
+        let arStarted = false;
+        let markerFound = false;
+        let debugLog = [];
         
-        // スタンプ獲得の管理
-        const collectedStamps = new Set();
+        // デバッグ情報表示
+        function updateDebug(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `${timestamp}: ${message}`;
+            console.log("🔍 " + logEntry);
+            
+            debugLog.push(logEntry);
+            if (debugLog.length > 10) debugLog.shift(); // 最新10件のみ保持
+            
+            debugText.innerHTML = debugLog.join('<br>');
+            debug.classList.remove('hidden');
+        }
         
-        startButton.addEventListener('click', async () => {
+        // デバイス検出
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const isMobile = isIOS || isAndroid;
+        
+        updateDebug(`Device: ${isIOS ? 'iOS' : isAndroid ? 'Android' : 'Desktop'} ${isSafari ? 'Safari' : 'Other'}`);
+        
+        // スマホ用の強制カメラ表示
+        function forceVideoDisplay() {
+            updateDebug("Forcing video display for mobile...");
+            
+            // AR.jsのビデオ要素を探して強制表示
+            const checkVideo = setInterval(() => {
+                const video = document.querySelector('#arjs-video') || document.querySelector('video');
+                if (video) {
+                    updateDebug("Found video element, applying mobile styles");
+                    
+                    video.style.position = 'fixed';
+                    video.style.top = '0';
+                    video.style.left = '0';
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    video.style.objectFit = 'cover';
+                    video.style.zIndex = '-1';
+                    video.style.transform = 'translateZ(0)';
+                    video.style.webkitTransform = 'translateZ(0)';
+                    video.style.backfaceVisibility = 'hidden';
+                    video.style.webkitBackfaceVisibility = 'hidden';
+                    
+                    // スマホの場合、ビデオの可視性を強制
+                    if (isMobile) {
+                        video.style.visibility = 'visible';
+                        video.style.opacity = '1';
+                        video.style.display = 'block';
+                        updateDebug("Applied mobile video visibility fixes");
+                    }
+                    
+                    clearInterval(checkVideo);
+                }
+            }, 100);
+            
+            // 10秒後にタイムアウト
+            setTimeout(() => clearInterval(checkVideo), 10000);
+        }
+        
+        startButton.addEventListener('click', async function() {
+            updateDebug("Start button clicked");
+            status.textContent = "カメラにアクセス中...";
+            
             try {
-                status.textContent = "カメラを初期化中...";
+                // Step 1: カメラ許可を取得
+                updateDebug("Requesting camera access...");
                 
-                // iOS Safari対応：まずメディア権限を確実に取得
                 const constraints = {
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 640, max: 1920 },
-                        height: { ideal: 480, max: 1080 }
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 640, max: 1280 },
+                        height: { ideal: 480, max: 720 }
                     }
                 };
                 
-                let stream;
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    console.log("Camera stream obtained:", stream);
-                } catch (cameraError) {
-                    console.error("Camera error:", cameraError);
-                    throw cameraError;
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                updateDebug(`Camera stream obtained: ${stream.getVideoTracks().length} tracks`);
+                
+                // ストリーム情報をログ
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                updateDebug(`Video: ${settings.width}x${settings.height}, facing: ${settings.facingMode}`);
+                
+                // すぐにストリームを停止（AR.jsが独自に管理するため）
+                stream.getTracks().forEach(track => track.stop());
+                cameraStarted = true;
+                
+                // Step 2: UIを切り替え
+                status.textContent = "ARを初期化中...";
+                updateDebug("Starting AR initialization...");
+                
+                // スマホ用の強制ビデオ表示を開始
+                if (isMobile) {
+                    forceVideoDisplay();
                 }
                 
-                // ストリームを停止（AR.jsが管理する）
-                if (stream) {
-                    stream.getTracks().forEach(track => {
-                        console.log("Stopping track:", track.kind);
-                        track.stop();
-                    });
-                }
+                // デバイス別待機時間
+                const waitTime = isMobile ? (isIOS ? 5000 : 4000) : 2000;
+                updateDebug(`Waiting ${waitTime}ms for AR initialization...`);
                 
-                status.textContent = "ARを起動中...";
-                
-                // iOS対応：少し長めに待つ
                 setTimeout(() => {
-                    loading.classList.add("hidden");
-                    info.classList.remove("hidden");
-                    stampCounter.classList.remove("hidden");
+                    loading.classList.add('hidden');
+                    info.classList.remove('hidden');
+                    markerOverlay.classList.remove('hidden');
+                    infoText.textContent = "HIROマーカーを中央のガイドに合わせてください";
                     
-                    // ARマーカーイベントの設定
-                    setTimeout(setupAREvents, 1000);
+                    updateDebug("UI switched, setting up AR listeners...");
                     
-                    // iOS用：ARシーンのレンダリング強制開始
-                    const scene = document.querySelector('a-scene');
-                    if (scene && scene.renderStarted === false) {
-                        scene.addEventListener('renderstart', () => {
-                            console.log("AR scene rendering started");
-                        });
-                    }
+                    // Step 3: ARイベントリスナーを設定
+                    setupARListeners();
                     
-                }, 3000);
+                    // Step 4: ARが実際に動作しているかチェック
+                    setTimeout(checkARStatus, 3000);
+                    
+                }, waitTime);
                 
             } catch (error) {
-                console.error('Initialization error:', error);
-                handleError(error);
+                updateDebug(`Camera error: ${error.name} - ${error.message}`);
+                handleCameraError(error);
             }
         });
         
-        function setupAREvents() {
-            const marker = document.querySelector('a-marker');
-            const stamp = document.querySelector('#stamp1');
+        function setupARListeners() {
+            const marker = document.getElementById('hiro-marker');
+            const scene = document.querySelector('a-scene');
             
             if (marker) {
-                // マーカーが見つかった時
                 marker.addEventListener('markerFound', function() {
-                    console.log('Marker found!');
-                    isMarkerVisible = true;
-                    
-                    // 初回発見時のみスタンプ獲得
-                    if (!collectedStamps.has('hiro')) {
-                        collectStamp('hiro');
-                    }
-                    
-                    // 情報テキストを更新
-                    updateInfoText("✅ マーカーを認識中...");
+                    updateDebug("🎉 HIRO marker FOUND!");
+                    markerFound = true;
+                    infoText.innerHTML = `
+                        <div style="color: #00FF00; font-size: 20px;">🎉 スタンプ発見！</div>
+                        <div>マーカーを安定して保持してください</div>
+                    `;
+                    info.style.borderColor = "#00FF00";
+                    markerOverlay.style.borderColor = "#00FF00";
+                    markerOverlay.style.boxShadow = "0 0 20px #00FF00";
                 });
                 
-                // マーカーを見失った時
                 marker.addEventListener('markerLost', function() {
-                    console.log('Marker lost!');
-                    isMarkerVisible = false;
-                    updateInfoText("📷 HIROマーカーをカメラに向けてください");
+                    updateDebug("❌ HIRO marker lost");
+                    markerFound = false;
+                    infoText.innerHTML = `
+                        <div>HIROマーカーを中央のガイドに合わせてください</div>
+                        <div style="font-size: 12px; margin-top: 5px;">明るい場所で、30cm程度の距離を保ってください</div>
+                    `;
+                    info.style.borderColor = "#4CAF50";
+                    markerOverlay.style.borderColor = "#4CAF50";
+                    markerOverlay.style.boxShadow = "none";
+                });
+            }
+            
+            if (scene) {
+                scene.addEventListener('arjs-video-loaded', function() {
+                    updateDebug("📹 AR.js video loaded successfully!");
+                    arStarted = true;
+                });
+                
+                scene.addEventListener('camera-init', function() {
+                    updateDebug("📷 Camera initialized by AR.js");
+                });
+                
+                // レンダリング開始を検出
+                scene.addEventListener('renderstart', function() {
+                    updateDebug("🎮 AR scene render started");
                 });
             }
         }
         
-        function collectStamp(stampId) {
-            if (collectedStamps.has(stampId)) return;
+        function checkARStatus() {
+            const scene = document.querySelector('a-scene');
+            const canvas = scene ? scene.canvas : null;
+            const video = document.querySelector('#arjs-video') || document.querySelector('video');
             
-            collectedStamps.add(stampId);
-            stampCount++;
-            countElement.textContent = stampCount;
+            updateDebug(`Status check - Scene: ${!!scene}, Canvas: ${!!canvas}, Video: ${!!video}, Started: ${arStarted}`);
             
-            // 祝福エフェクト
-            showCelebration("🎊 スタンプ獲得! 🎊");
-            
-            // 効果音（もしあれば）
-            try {
-                const sound = document.querySelector('#successSound');
-                if (sound) {
-                    sound.currentTime = 0;
-                    sound.play().catch(e => console.log('Sound play failed:', e));
-                }
-            } catch (e) {
-                console.log('Sound not available');
-            }
-            
-            // 全スタンプ収集チェック
-            if (stampCount >= 3) {
+            if (!arStarted && !video) {
+                updateDebug("⚠️ AR not properly initialized, trying recovery...");
+                infoText.innerHTML = `
+                    <div style="color: #FFA500;">ARの初期化に時間がかかっています...</div>
+                    <div style="font-size: 12px; margin-top: 10px;">
+                        しばらくお待ちください。改善されない場合はページを再読み込みしてください。
+                    </div>
+                `;
+                
+                // さらに時間を待つ
                 setTimeout(() => {
-                    showCelebration("🏆 コンプリート達成! 🏆");
-                }, 2000);
+                    if (!arStarted) {
+                        updateDebug("❗ AR initialization timeout");
+                        infoText.innerHTML = `
+                            <div style="color: #FF4444;">ARの初期化でエラーが発生しました</div>
+                            <div style="font-size: 12px; margin-top: 10px;">
+                                <button onclick="location.reload()" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 5px;">
+                                    🔄 再読み込み
+                                </button>
+                            </div>
+                        `;
+                    }
+                }, 8000);
+            } else {
+                updateDebug("✅ AR appears to be working");
+                infoText.innerHTML = `
+                    <div>HIROマーカーを中央のガイドに合わせてください</div>
+                    <div style="font-size: 12px; margin-top: 5px; color: #00FF00;">
+                        ARカメラが正常に動作しています
+                    </div>
+                `;
             }
         }
         
-        function showCelebration(message) {
-            // 既存の祝福メッセージがあれば削除
-            const existing = document.querySelector('.celebration');
-            if (existing) {
-                existing.remove();
-            }
+        function handleCameraError(error) {
+            let errorMessage = "カメラエラーが発生しました";
+            let solution = "";
             
-            const celebration = document.createElement('div');
-            celebration.className = 'celebration';
-            celebration.textContent = message;
-            document.body.appendChild(celebration);
-            
-            // 3秒後に削除
-            setTimeout(() => {
-                if (celebration.parentNode) {
-                    celebration.remove();
-                }
-            }, 3000);
-        }
-        
-        function updateInfoText(text) {
-            const infoDiv = info.querySelector('div');
-            if (infoDiv) {
-                infoDiv.textContent = text;
-            }
-        }
-        
-        function handleError(error) {
-            console.error('Error details:', error);
-            
-            let errorMessage = "エラーが発生しました";
-            let suggestion = "ページを再読み込みしてください";
-            
-            if (error.name === 'NotAllowedError') {
-                errorMessage = "カメラのアクセス許可が拒否されました";
-                suggestion = "ブラウザの設定でカメラを許可してください";
-            } else if (error.name === 'NotFoundError') {
-                errorMessage = "カメラが見つかりません";
-                suggestion = "デバイスにカメラがあることを確認してください";
-            } else if (error.name === 'NotSupportedError') {
-                errorMessage = "このブラウザではサポートされていません";
-                suggestion = "Chrome、Firefox、Safariをお試しください";
+            switch (error.name) {
+                case 'NotAllowedError':
+                    errorMessage = "カメラの許可が拒否されました";
+                    solution = "ブラウザの設定でカメラを許可してください";
+                    break;
+                case 'NotFoundError':
+                    errorMessage = "カメラが見つかりません";
+                    solution = "デバイスにカメラがあることを確認してください";
+                    break;
+                case 'NotSupportedError':
+                    errorMessage = "このブラウザはカメラをサポートしていません";
+                    solution = "Chrome、Firefox、Safariをお試しください";
+                    break;
+                case 'OverconstrainedError':
+                    errorMessage = "カメラの設定に問題があります";
+                    solution = "別のカメラまたはブラウザをお試しください";
+                    break;
             }
             
             status.innerHTML = `
-                <div style="color: #ff4444;">${errorMessage}</div>
-                <div style="font-size: 12px; margin-top: 10px; opacity: 0.8;">
-                    ${suggestion}
-                </div>
-                <button onclick="location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                <div style="color: #ff4444; margin-bottom: 10px;">${errorMessage}</div>
+                <div style="font-size: 14px; margin-bottom: 15px;">${solution}</div>
+                <button onclick="location.reload()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px;">
                     🔄 再読み込み
                 </button>
             `;
         }
         
-        // デバッグ情報とiOS対応チェック
-        console.log("🔍 Debug Info:");
-        console.log("User Agent:", navigator.userAgent);
-        console.log("HTTPS:", location.protocol === 'https:');
-        console.log("Camera API:", 'mediaDevices' in navigator);
-        console.log("AR.js loaded:", typeof AFRAME !== 'undefined');
-        console.log("iOS Safari:", /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream);
-        console.log("WebGL support:", !!window.WebGLRenderingContext);
-        
-        // iOS Safari特有の対応
-        const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isIOSSafari) {
-            console.log("🍎 iOS Safari detected - applying specific fixes");
-            
-            // iOS用のメタタグ動的追加
-            const viewport = document.querySelector('meta[name="viewport"]');
-            if (viewport) {
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no, viewport-fit=cover');
-            }
-            
-            // iOS Safari用のカメラアクセス改善
-            document.body.addEventListener('touchstart', function() {
-                // タッチイベントでカメラアクセスを改善
-            }, { once: true });
-        }
-        
-        // ARシーンの強制初期化（iOS対応）
+        // ページ読み込み時のチェック
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                const scene = document.querySelector('a-scene');
-                if (scene) {
-                    // iOS Safari用のAR初期化改善
-                    scene.addEventListener('loaded', () => {
-                        console.log("📱 A-Frame scene loaded");
-                    });
-                    
-                    scene.addEventListener('enter-vr', () => {
-                        console.log("📱 Entered VR mode");
-                    });
-                }
-            }, 1000);
-        });
-        
-        // パフォーマンス監視
-        let frameCount = 0;
-        setInterval(() => {
-            frameCount++;
-            if (frameCount % 60 === 0) {
-                console.log(`🎮 AR running for ${frameCount/60} minutes`);
+            updateDebug("Page loaded, running compatibility checks...");
+            
+            const checks = {
+                'HTTPS': location.protocol === 'https:',
+                'MediaDevices': 'mediaDevices' in navigator,
+                'getUserMedia': navigator.mediaDevices && 'getUserMedia' in navigator.mediaDevices,
+                'WebGL': !!window.WebGLRenderingContext,
+                'A-Frame': typeof AFRAME !== 'undefined'
+            };
+            
+            const failedChecks = Object.entries(checks).filter(([key, value]) => !value).map(([key]) => key);
+            
+            if (failedChecks.length > 0) {
+                updateDebug(`❌ Failed checks: ${failedChecks.join(', ')}`);
+            } else {
+                updateDebug("✅ All compatibility checks passed");
             }
-        }, 1000);
+            
+            // スマホでの追加チェック
+            if (isMobile) {
+                updateDebug(`Mobile device detected - applying mobile optimizations`);
+            }
+        });
         
     </script>
 </body>
