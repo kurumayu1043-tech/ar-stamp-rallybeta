@@ -4,12 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AR Stamp Rally</title>
-    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-master.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mind-ar-aframe.prod.js"></script>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
+            background: #000;
         }
         
         #loading {
@@ -18,7 +19,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
             display: flex;
             flex-direction: column;
@@ -36,362 +37,133 @@
             text-decoration: none;
             display: inline-block;
             font-size: 16px;
-            margin: 4px 2px;
+            margin: 20px 2px;
             cursor: pointer;
             border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        #startButton:hover {
+            background: #45a049;
         }
         
         #info {
             position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 15px;
+            border-radius: 10px;
             z-index: 100;
             font-size: 14px;
+            text-align: center;
+        }
+        
+        #stampCounter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 100;
         }
         
         .hidden {
             display: none !important;
         }
+        
+        .celebration {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 200;
+            animation: bounce 0.6s ease-in-out;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 60%, 100% {
+                transform: translate(-50%, -50%) translateY(0);
+            }
+            40% {
+                transform: translate(-50%, -50%) translateY(-20px);
+            }
+            80% {
+                transform: translate(-50%, -50%) translateY(-10px);
+            }
+        }
     </style>
 </head>
 <body>
     <div id="loading">
-        <h2>AR スタンプラリー</h2>
-        <p>カメラのアクセス許可が必要です</p>
-        <button id="startButton">開始</button>
+        <h1>🎯 AR スタンプラリー</h1>
+        <p>HIROマーカーを探してスタンプを集めよう！</p>
+        <p style="font-size: 14px; opacity: 0.8;">カメラのアクセス許可が必要です</p>
+        <button id="startButton">🚀 ARを開始</button>
         <div id="status">準備中...</div>
+        <div style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
+            <a href="https://github.com/AR-js-org/AR.js/blob/master/data/images/hiro.png" target="_blank" style="color: #4CAF50;">
+                HIROマーカーをダウンロード
+            </a>
+        </div>
     </div>
     
     <div id="info" class="hidden">
-        <div>ARマーカーを探してください</div>
-        <div id="found" class="hidden">スタンプを発見！</div>
+        <div>📷 HIROマーカーをカメラに向けてください</div>
+        <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
+            マーカーが見つからない場合は、照明を調整してください
+        </div>
     </div>
     
-    <a-scene id="scene"
-        embedded
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;"
+    <div id="stampCounter" class="hidden">
+        🏆 スタンプ: <span id="count">0</span>/3
+    </div>
+    
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" 
         vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false"
-        loading-screen="enabled: false"
-        renderer="colorManagement: true, physicallyCorrectLights: true, alpha: true, antialias: true"
-        background="color: #000; transparent: true">
+        renderer="logarithmicDepthBuffer: true;"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
         
-        <a-assets timeout="30000">
-            <a-asset-item id="avatarModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item>
+        <a-assets>
+            <!-- 音声ファイル（オプション） -->
+            <audio id="successSound" preload="auto">
+                <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhFjiS2O7FeiaHJjm8cH7AyRJGYxP0j1VC8nNxJi9rOxdRSgZiJh6FCBABHJNuqgYyWwN/gEUf3mNL86RFHlNdGxQmCj/Jt8Q2vJO7ygWmrDJZCJFOPFNdOkn+qJ9LdNNcHV3RMfwgT7WQG7F0K/foBDvwuoCL3HxTi7PQ8WEfHVt9YYjdlZFn1xW3KtL/vJjGcHf6+tz7yZLuE6fZXnDRNZzFNeTtNJLZgUUMjm2yg3qEoHnGRl9F3cUFLH7m8fEt7tJP7e6V6/f8sHxKMhvGlJlHZ2J4GYnEXVfKxGKaFqNBvEeGrOHjgWO2fwJE3FHdz5WMCYdWm1rFOZa+gEA1WUGcAzwJjNpJNuKyY5fdfDwHGJKhfYRiMHpMdLT7y3c0hgHUKgWJsoBXXOdRIGpKfKJgL4kDfvLGp9sQMhcqNLYLbqKC4mQ2Pd7M8qKDp3BVJjWW5Bs8R3LPhdfvHmH+QhGzZF8=" type="audio/wav">
+            </audio>
         </a-assets>
         
-        <a-camera 
-            position="0 0 0" 
-            look-controls="enabled: false">
-        </a-camera>
-        
-        <!-- This will be dynamically populated -->
-        <a-entity id="ar-content"></a-entity>
-    </a-scene>
-
-    <script>
-        const startButton = document.querySelector("#startButton");
-        const loading = document.querySelector("#loading");
-        const info = document.querySelector("#info");
-        const status = document.querySelector("#status");
-        const found = document.querySelector("#found");
-        const sceneEl = document.querySelector("#scene");
-        const arContent = document.querySelector("#ar-content");
-        
-        let mindARInstance = null;
-        let isARStarted = false;
-        
-        // Wait for libraries to load completely
-        function waitForLibraries() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 50;
-                
-                function check() {
-                    attempts++;
-                    console.log(`Library check attempt ${attempts}`);
-                    
-                    if (window.AFRAME && window.MINDAR) {
-                        console.log("Libraries loaded successfully");
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        reject(new Error("Libraries failed to load"));
-                    } else {
-                        setTimeout(check, 200);
-                    }
-                }
-                check();
-            });
-        }
-        
-        startButton.addEventListener('click', async () => {
-            try {
-                status.textContent = "ライブラリを確認中...";
-                
-                // Wait for libraries to load
-                await waitForLibraries();
-                
-                status.textContent = "カメラを初期化中...";
-                
-                // Get camera permission first
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                });
-                
-                // Stop the stream - MindAR will handle camera
-                stream.getTracks().forEach(track => track.stop());
-                
-                status.textContent = "ARを初期化中...";
-                
-                // Initialize with direct MindAR approach
-                await initMindAR();
-                
-            } catch (error) {
-                console.error('Initialization error:', error);
-                handleError(error);
-            }
-        });
-        
-        async function initMindAR() {
-            try {
-                // Create MindAR instance directly
-                const { MindARThree } = window.MINDAR.IMAGE;
-                
-                mindARInstance = new MindARThree({
-                    container: sceneEl,
-                    imageTargetSrc: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind',
-                    maxTrack: 1,
-                    uiLoading: "no",
-                    uiScanning: "no",
-                    uiError: "no"
-                });
-                
-                console.log("MindAR instance created");
-                
-                // Start the AR system
-                await mindARInstance.start();
-                console.log("MindAR started successfully");
-                
-                isARStarted = true;
-                loading.classList.add("hidden");
-                info.classList.remove("hidden");
-                
-                // Setup 3D content
-                setupARContent();
-                
-            } catch (error) {
-                console.error("MindAR initialization failed:", error);
-                
-                // Fallback to A-Frame component approach
-                try {
-                    await initWithAFrameComponent();
-                } catch (fallbackError) {
-                    console.error("Fallback initialization also failed:", fallbackError);
-                    throw new Error(`AR initialization failed: ${error.message}`);
-                }
-            }
-        }
-        
-        async function initWithAFrameComponent() {
-            console.log("Trying A-Frame component fallback");
+        <a-marker preset="hiro">
+            <!-- スタンプ1: 回転する宝箱 -->
+            <a-box 
+                id="stamp1"
+                position="0 0.5 0" 
+                scale="0.3 0.3 0.3"
+                color="#FFD700"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"
+                shadow="cast: true"
+                class="stamp-object">
+            </a-box>
             
-            // Remove existing content
-            arContent.innerHTML = '';
-            
-            // Add MindAR component to scene
-            sceneEl.setAttribute('mindar-image', {
-                imageTargetSrc: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind',
-                autoStart: false,
-                uiLoading: 'no',
-                uiScanning: 'no',
-                uiError: 'no',
-                maxTrack: 1
-            });
-            
-            // Wait for component to initialize
-            await new Promise(resolve => {
-                setTimeout(resolve, 3000);
-            });
-            
-            // Try to start the system
-            const system = sceneEl.systems['mindar-image-system'];
-            if (system && system.start) {
-                await system.start();
-                console.log("A-Frame component started");
-            }
-            
-            // Add AR content using A-Frame approach
-            setupAFrameARContent();
-            
-            isARStarted = true;
-            loading.classList.add("hidden");
-            info.classList.remove("hidden");
-        }
-        
-        function setupARContent() {
-            if (!mindARInstance) return;
-            
-            // Get the anchor for target 0
-            const anchor = mindARInstance.addAnchor(0);
-            
-            // Create 3D content using Three.js
-            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const material = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-            const cube = new THREE.Mesh(geometry, material);
-            
-            // Add rotation animation
-            const animate = () => {
-                cube.rotation.x += 0.01;
-                cube.rotation.y += 0.01;
-                requestAnimationFrame(animate);
-            };
-            animate();
-            
-            anchor.group.add(cube);
-            
-            // Handle anchor events
-            anchor.onTargetFound = () => {
-                console.log("Target found via MindAR");
-                found.classList.remove("hidden");
-                setTimeout(() => {
-                    alert("スタンプを獲得しました！🎉");
-                }, 1000);
-            };
-            
-            anchor.onTargetLost = () => {
-                console.log("Target lost via MindAR");
-                found.classList.add("hidden");
-            };
-        }
-        
-        function setupAFrameARContent() {
-            // Create A-Frame AR content
-            arContent.innerHTML = `
-                <a-entity mindar-image-target="targetIndex: 0">
-                    <a-gltf-model 
-                        gltf-model="#avatarModel"
-                        scale="0.3 0.3 0.3"
-                        position="0 0 0"
-                        rotation="0 0 0"
-                        animation-mixer
-                        visible="true">
-                    </a-gltf-model>
-                    
-                    <a-text 
-                        value="スタンプGET!"
-                        position="0 0.5 0"
-                        align="center"
-                        color="red"
-                        scale="2 2 2"
-                        visible="true">
-                    </a-text>
-                    
-                    <a-box 
-                        position="0 0.3 0" 
-                        scale="0.1 0.1 0.1" 
-                        color="gold"
-                        animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
-                        visible="true">
-                    </a-box>
-                </a-entity>
-            `;
-            
-            // Wait for content to be added to DOM
-            setTimeout(() => {
-                const target = arContent.querySelector('[mindar-image-target]');
-                if (target) {
-                    target.addEventListener('targetFound', event => {
-                        console.log("Target found via A-Frame", event.detail.targetIndex);
-                        found.classList.remove("hidden");
-                        setTimeout(() => {
-                            alert("スタンプを獲得しました！🎉");
-                        }, 1000);
-                    });
-                    
-                    target.addEventListener('targetLost', event => {
-                        console.log("Target lost via A-Frame", event.detail.targetIndex);
-                        found.classList.add("hidden");
-                    });
-                }
-            }, 1000);
-        }
-        
-        function handleError(error) {
-            console.error('Error details:', error);
-            
-            if (error.name === 'NotAllowedError') {
-                status.innerHTML = `
-                    <div>カメラのアクセス許可が拒否されました</div>
-                    <div style="font-size: 12px; margin-top: 10px;">
-                        ブラウザの設定でカメラを許可してください
-                    </div>
-                `;
-            } else if (error.name === 'NotFoundError') {
-                status.textContent = "カメラが見つかりません";
-            } else if (error.message.includes('Libraries failed to load')) {
-                status.innerHTML = `
-                    <div>必要なライブラリの読み込みに失敗しました</div>
-                    <div style="font-size: 12px; margin-top: 10px;">
-                        インターネット接続を確認してページを再読み込みしてください
-                    </div>
-                    <button onclick="location.reload()" style="margin-top: 10px; padding: 5px 10px;">
-                        再読み込み
-                    </button>
-                `;
-            } else {
-                status.innerHTML = `
-                    <div>初期化エラー: ${error.message}</div>
-                    <div style="font-size: 12px; margin-top: 10px;">
-                        ページを再読み込みしてください
-                    </div>
-                    <button onclick="location.reload()" style="margin-top: 10px; padding: 5px 10px;">
-                        再読み込み
-                    </button>
-                `;
-            }
-        }
-        
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (!isARStarted) return;
-            
-            if (document.visibilityState === 'visible') {
-                if (mindARInstance && mindARInstance.start) {
-                    mindARInstance.start().catch(console.error);
-                }
-            } else {
-                if (mindARInstance && mindARInstance.stop) {
-                    mindARInstance.stop();
-                }
-            }
-        });
-        
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (mindARInstance && mindARInstance.stop) {
-                mindARInstance.stop();
-            }
-        });
-        
-        // Debug information
-        console.log("User Agent:", navigator.userAgent);
-        console.log("HTTPS:", location.protocol === 'https:');
-        console.log("Camera API available:", 'mediaDevices' in navigator);
-        
-        // Check if libraries are loading
-        setTimeout(() => {
-            console.log("AFRAME available:", !!window.AFRAME);
-            console.log("MINDAR available:", !!window.MINDAR);
-        }, 1000);
-        
-    </script>
-</body>
-</html>
+            <!-- スタンプのテキスト -->
+            <a-text 
+                value="🎉 スタンプ GET! 🎉"
+                position="0 1.2 0"
+                align="center"
+                color="#FF4444"
+                scale="1.5 1.5 1.5"
+                animation="property: scale; to: 2 2 2; dir: alternate; loop: true; dur: 1000"
+                font="kframe">
+            </a-text>
