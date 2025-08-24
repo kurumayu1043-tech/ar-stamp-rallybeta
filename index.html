@@ -4,11 +4,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AR Crystal</title>
 
+    <!-- A-FrameとMindARのライブラリを読み込みます -->
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-master.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mind-ar-aframe.prod.js"></script>
   </head>
   <body>
-    <a-scene mindar-image="imageTargetSrc: /ar-stamp-rallybeta/targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  
+    <a-scene mindar-image="imageTargetSrc: /ar-stamp-rallybeta/targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true">
       
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
       
