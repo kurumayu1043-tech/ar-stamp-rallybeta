@@ -8,6 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <!-- A-FrameライブラリをCDNから読み込み -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <!-- AR.jsライブラリをCDNから読み込み (A-Frameの後に追加) -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         /* Base styles */
         * {
@@ -272,7 +274,20 @@
         </div>
 
         <!-- A-Frame AR Scene -->
-        <a-scene id="ar-scene" embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+        <!-- マーカーベースARに一時的に変更して検証 -->
+        <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+            <a-assets>
+                <!-- AR.jsのHiroマーカー用パターン -->
+                <a-asset-item id="hiro-marker-pattern" src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt"></a-asset-item>
+                <!-- 検証用の3Dモデル -->
+                <a-asset-item id="rocket-model" src="https://cdn.aframe.io/examples/ar/glyph/models/rocket/rocket.gltf"></a-asset-item>
+            </a-assets>
+
+            <!-- Hiroマーカーに連動するモデル -->
+            <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt">
+                <a-entity gltf-model="#rocket-model" position="0 0 0" scale="0.2 0.2 0.2" rotation="0 0 0"></a-entity>
+            </a-marker>
+
             <a-camera></a-camera>
         </a-scene>
         
@@ -377,7 +392,7 @@
                 const startScreen = document.getElementById('start-screen');
                 const scannerScreen = document.getElementById('scanner-screen');
                 const stampScreen = document.getElementById('stamp-screen');
-                const arScene = document.getElementById('ar-scene');
+                const arScene = document.querySelector('a-scene');
                 const backButton = document.getElementById('back-button');
                 const arBackButton = document.getElementById('ar-back-button');
                 
@@ -402,7 +417,6 @@
                 } else if (screenId === 'ar') {
                     arScene.style.display = 'block';
                     arBackButton.style.display = 'block';
-                    // AR表示に戻る場合は、AR.jsのカメラを再開する
                     this.startAR();
                 }
             },
@@ -491,29 +505,21 @@
              * ARシーンを停止
              */
             stopAR() {
-                const arScene = document.getElementById('ar-scene');
+                // AR.jsの停止は、`a-scene`の表示を非表示にするだけでOK
+                const arScene = document.querySelector('a-scene');
                 if (arScene) {
-                    // AR.jsのビデオストリームを停止
-                    const video = arScene.querySelector('video');
-                    if (video && video.srcObject) {
-                        video.srcObject.getTracks().forEach(track => track.stop());
-                    }
-                    
-                    const existingModel = arScene.querySelector('#ar-model');
-                    if (existingModel) {
-                        arScene.removeChild(existingModel);
-                    }
+                     arScene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false;'); // 初期化状態に戻す
                 }
                 log('AR scene stopped.');
             },
 
             /**
-             * ARシーンを再開
+             * ARシーンを開始
              */
             startAR() {
-                const arScene = document.getElementById('ar-scene');
-                // AR.jsのカメラを再起動
-                // 明示的な処理は不要。showScreenでarSceneをdisplay:blockにするだけで対応
+                // AR.jsは画面が表示されると自動的にカメラを開始します。
+                // したがって、この関数では特別な処理は不要です。
+                log('AR scene started.');
             },
 
             /**
@@ -585,7 +591,7 @@
              * @param {string} stampType - 表示するスタンプのタイプ
              */
             showAR(stampType) {
-                const arScene = document.getElementById('ar-scene');
+                const arScene = document.querySelector('a-scene');
                 if (!arScene) {
                     log('AR scene element not found.');
                     return;
@@ -605,16 +611,6 @@
                     <p>デバイスを動かしてARモデルを探してください。</p>
                 `;
                 
-                // ARシーンに3Dモデルを追加
-                const arElement = document.createElement('a-entity');
-                arElement.setAttribute('id', 'ar-model');
-                // サンプルモデルに変更して検証
-                arElement.setAttribute('gltf-model', '#rocket-model');
-                arElement.setAttribute('position', '0 0 -5');
-                arElement.setAttribute('scale', '0.5 0.5 0.5');
-
-                arScene.appendChild(arElement);
-
                 // 画面をARシーンに切り替え
                 this.showScreen('ar');
 
@@ -625,14 +621,6 @@
             }
         };
         
-        // A-Frame assets定義
-        // ロードする3Dモデルを事前に定義
-        const aFrameAssets = document.createElement('a-assets');
-        aFrameAssets.innerHTML = `
-            <a-asset-item id="rocket-model" src="https://cdn.aframe.io/examples/ar/glyph/models/rocket/rocket.gltf"></a-asset-item>
-        `;
-        document.getElementById('ar-scene').appendChild(aFrameAssets);
-
         // ページロード時にアプリケーションを初期化
         window.onload = function() {
             app.init();
