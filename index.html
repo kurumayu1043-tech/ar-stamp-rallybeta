@@ -274,18 +274,15 @@
     </div>
     
     <!-- ARシーンをアプリの表示とは別に管理 -->
-    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: false;" style="display: none;">
+    <!-- AR.jsのデバッグを無効にし、マーカー認識なしで表示 -->
+    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-assets>
-            <!-- AR.jsのHiroマーカー用パターン -->
-            <a-asset-item id="hiro-marker-pattern" src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt"></a-asset-item>
             <!-- 検証用の3Dモデル -->
             <a-asset-item id="rocket-model" src="https://cdn.aframe.io/examples/ar/glyph/models/rocket/rocket.gltf"></a-asset-item>
         </a-assets>
 
-        <!-- Hiroマーカーに連動するモデル -->
-        <a-marker type="pattern" url="#hiro-marker-pattern">
-            <a-entity gltf-model="#rocket-model" position="0 0 0" scale="0.2 0.2 0.2" rotation="0 0 0"></a-entity>
-        </a-marker>
+        <!-- マーカーなしで常に画面中央にモデルを表示 -->
+        <a-entity gltf-model="#rocket-model" position="0 0 -5" scale="0.5 0.5 0.5" rotation="0 0 0" class="ar-content"></a-entity>
 
         <a-camera></a-camera>
     </a-scene>
@@ -513,7 +510,12 @@
             stopAR() {
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
-                    arScene.pause();
+                    // AR.jsのカメラを停止
+                    const ar = arScene.components['arjs'];
+                    if (ar) {
+                         ar.pause();
+                    }
+                    arScene.style.display = 'none'; // ARシーンを非表示にする
                     log('AR scene paused.');
                 }
             },
@@ -524,7 +526,16 @@
             startAR() {
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
+                    arScene.style.display = 'block'; // ARシーンを表示する
+                    // A-Frameのシステムを再開
                     arScene.play();
+                    
+                    // AR.jsのコンポーネントを再初期化
+                    const ar = arScene.components['arjs'];
+                    if (ar) {
+                        ar.play();
+                    }
+                    
                     log('AR scene started.');
                 }
             },
@@ -609,12 +620,9 @@
                 arMessage.style.display = 'block';
                 arMessage.innerHTML = `
                     <h3>${this.stamps[stampType].name}のARを表示中</h3>
-                    <p>カメラを<a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt" target="_blank" style="color: yellow; text-decoration: underline;">Hiroマーカー</a>に向けてください。</p>
+                    <p>3Dモデルが画面中央に表示されます。</p>
                 `;
                 
-                // AR.jsのデバッグUIを一時的に有効に (検証用)
-                arScene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true;');
-
                 // 画面をARシーンに切り替え
                 this.showScreen('ar');
 
