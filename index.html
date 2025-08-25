@@ -513,10 +513,9 @@
             stopAR() {
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
-                    // AR.jsのカメラを停止
                     arScene.pause();
+                    log('AR scene paused.');
                 }
-                log('AR scene stopped.');
             },
 
             /**
@@ -526,8 +525,8 @@
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
                     arScene.play();
+                    log('AR scene started.');
                 }
-                log('AR scene started.');
             },
 
             /**
@@ -613,13 +612,16 @@
                     <p>カメラを<a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt" target="_blank" style="color: yellow; text-decoration: underline;">Hiroマーカー</a>に向けてください。</p>
                 `;
                 
+                // AR.jsのデバッグUIを一時的に有効に (検証用)
+                arScene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true;');
+
                 // 画面をARシーンに切り替え
                 this.showScreen('ar');
 
-                // 5秒後にメッセージを非表示にする
+                // 10秒後にメッセージを非表示にする
                 setTimeout(() => {
                     arMessage.style.display = 'none';
-                }, 5000);
+                }, 10000);
             }
         };
         
