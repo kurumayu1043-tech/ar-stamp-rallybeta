@@ -688,7 +688,8 @@
                 this.stopScanner();
 
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    const constraints = { video: { facingMode: 'environment' } };
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     this.video.srcObject = stream;
                     this.video.setAttribute('playsinline', true);
                     this.video.play();
@@ -698,13 +699,28 @@
                 } catch (err) {
                     this.log(`Failed to start scanner: ${err.name}: ${err.message}`);
                     this.stopScanner();
-                    if (err.name === 'NotAllowedError') {
-                        this.showError('カメラへのアクセスが拒否されました。ブラウザの設定で、このサイトのカメラ利用を許可してください。');
-                    } else if (err.name === 'NotFoundError') {
-                        this.showError('カメラが見つかりませんでした。端末にカメラがあるか確認してください。');
-                    } else {
-                        this.showError(`カメラの起動に失敗しました。詳細: ${err.message}`);
+                    let message = 'カメラの起動に失敗しました。';
+                    switch(err.name) {
+                        case 'NotAllowedError':
+                            message = 'カメラへのアクセスが拒否されました。ブラウザの設定で、このサイトのカメラ利用を許可してください。';
+                            break;
+                        case 'NotFoundError':
+                            message = 'カメラが見つかりませんでした。端末にカメラがあるか、別のアプリでカメラが使用されていないか確認してください。';
+                            break;
+                        case 'OverconstrainedError':
+                            message = 'カメラの設定が端末でサポートされていません。カメラが複数ある場合は、別のカメラで試してみてください。';
+                            break;
+                        case 'NotReadableError':
+                            message = 'カメラが使用中です。他のアプリでカメラが使われていないか確認し、再度お試しください。';
+                            break;
+                        case 'SecurityError':
+                            message = 'この接続ではカメラを利用できません。HTTPS接続のサイトで再度お試しください。';
+                            break;
+                        default:
+                            message += ` 詳細: ${err.message}`;
+                            break;
                     }
+                    this.showError(message);
                     this.showScreen('start');
                 }
             }
