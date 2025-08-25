@@ -756,20 +756,16 @@
                 this.showScreen('scanner');
                 this.scannerLoading.style.display = 'block'; // Show loading message
 
-                // First, check for camera access and explicitly ask for permission
+                // Stop any existing scanner instance before starting a new one
+                await this.stopScanner();
+                this.log("Previous scanner stopped. Proceeding with new initialization.");
+
+                // Check for camera access and explicitly ask for permission
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                     stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
-                    this.log("Camera access granted. Proceeding with scanner initialization.");
+                    this.log("Camera access granted.");
 
-                    // Stop any existing scanner instance before starting a new one
-                    if (this.qrCodeScanner && this.isScanning) {
-                        try {
-                            await this.qrCodeScanner.stop();
-                        } catch (err) {
-                            this.log(`Error stopping previous scanner: ${err}`);
-                        }
-                    }
                     this.scannerLoading.style.display = 'none'; // Hide loading message
                     this.qrReader.style.display = 'flex'; // Show QR reader
 
@@ -784,16 +780,14 @@
                         this.log(`QR Code detected: ${decodedText}`);
                         document.getElementById('qr-reader').classList.add('recognized');
                         // Stop the scanner immediately after a successful scan
-                        this.qrCodeScanner.stop().then(() => {
-                            this.isScanning = false;
-                            this.handleQRCode(decodedText);
-                        }).catch(err => {
-                            this.log(`Error stopping scanner: ${err}`);
+                        this.stopScanner().then(() => {
                             this.handleQRCode(decodedText);
                         });
                     };
 
                     const onScanError = (errorMessage) => {
+                        // Log errors but don't show to user unless critical
+                        // This prevents constant error popups during scanning
                         this.log(`QR Scanner Error: ${errorMessage}`);
                     };
 
@@ -810,9 +804,9 @@
                     this.qrReader.style.display = 'none'; // Hide QR reader
                     this.log(`Camera access error: ${error.name}: ${error.message}`);
                     if (error.name === 'NotAllowedError') {
-                        this.showError('カメラへのアクセスが拒否されました。ブラウザの設定で許可してください。');
+                        this.showError('カメラへのアクセスが拒否されました。ブラウザの設定で、このサイトのカメラ利用を許可してください。');
                     } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-                        this.showError('カメラが使用中です。他のアプリやタブを閉じてください。');
+                        this.showError('カメラが使用中です。他のアプリやタブを閉じてから再度お試しください。');
                     } else {
                         this.showError('カメラにアクセスできませんでした。別のデバイスで試すか、ブラウザの設定を確認してください。');
                     }
@@ -822,17 +816,21 @@
             async stopScanner() {
                 if (this.qrCodeScanner && this.isScanning) {
                     try {
+                        this.log('Attempting to stop scanner...');
                         await this.qrCodeScanner.stop();
                         this.isScanning = false;
-                        this.log('QR scanning stopped.');
+                        this.log('QR scanning stopped successfully.');
                     } catch (err) {
                         this.log(`Error stopping scanner: ${err}`);
+                        // If stopping fails, we assume it's already stopped or the instance is corrupt
+                        this.isScanning = false;
                     }
                 }
             }
 
             handleQRCode(data) {
                 this.log(`Handling QR Code data: ${data}`);
+                document.getElementById('qr-reader').classList.remove('recognized');
                 try {
                     const url = new URL(data);
                     const stampType = url.searchParams.get('stamp');
