@@ -196,18 +196,26 @@
         }
 
         /* AR表示用 */
+        .ar-scene-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+        
         a-scene {
-            position: fixed !important;
+            position: absolute !important;
             top: 0;
             left: 0;
             width: 100% !important;
             height: 100% !important;
-            display: none;
-            z-index: 100; /* A-Frameを最前面に表示 */
+            z-index: 100;
         }
         
         /* AR.jsのカメラ映像を画面全体に表示 */
-        #ar-scene video {
+        a-scene video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -224,6 +232,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             border-radius: 10px;
             z-index: 101; /* メッセージをARシーンの上に表示 */
+            max-width: 80%;
         }
         
         /* ログコンソール */
@@ -272,9 +281,10 @@
                 <button id="show-start-button" class="cta-button">スタート画面に戻る</button>
             </p>
         </div>
-
-        <!-- A-Frame AR Scene -->
-        <!-- マーカーベースARに一時的に変更して検証 -->
+    </div>
+    
+    <!-- ARシーンをアプリの表示とは別に管理 -->
+    <div id="ar-scene-container" class="ar-scene-container">
         <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
             <a-assets>
                 <!-- AR.jsのHiroマーカー用パターン -->
@@ -284,23 +294,23 @@
             </a-assets>
 
             <!-- Hiroマーカーに連動するモデル -->
-            <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt">
+            <a-marker type="pattern" url="#hiro-marker-pattern">
                 <a-entity gltf-model="#rocket-model" position="0 0 0" scale="0.2 0.2 0.2" rotation="0 0 0"></a-entity>
             </a-marker>
 
             <a-camera></a-camera>
         </a-scene>
-        
-        <!-- AR表示中に表示するメッセージ -->
-        <div id="ar-message" style="display:none;"></div>
-
-        <!-- 戻るボタン -->
-        <button id="back-button" aria-label="戻る" style="display: none;">&#8592;</button>
-        <button id="ar-back-button" aria-label="戻る" style="display: none;">&#8592;</button>
-        
-        <!-- ログコンソール -->
-        <pre id="log-console"></pre>
     </div>
+    
+    <!-- AR表示中に表示するメッセージ -->
+    <div id="ar-message" style="display:none;"></div>
+
+    <!-- 戻るボタン -->
+    <button id="back-button" aria-label="戻る" style="display: none;">&#8592;</button>
+    <button id="ar-back-button" aria-label="戻る" style="display: none;">&#8592;</button>
+    
+    <!-- ログコンソール -->
+    <pre id="log-console"></pre>
 
     <script>
         /**
@@ -377,7 +387,7 @@
                 document.getElementById('back-button').addEventListener('click', () => this.showScreen('start'));
                 document.getElementById('ar-back-button').addEventListener('click', () => {
                     this.stopAR();
-                    this.showScreen('scanner');
+                    this.showScreen('stamps'); // AR体験後、スタンプ一覧に戻る
                 });
                 document.getElementById('show-start-button').addEventListener('click', () => this.showScreen('start'));
             },
@@ -392,32 +402,39 @@
                 const startScreen = document.getElementById('start-screen');
                 const scannerScreen = document.getElementById('scanner-screen');
                 const stampScreen = document.getElementById('stamp-screen');
-                const arScene = document.querySelector('a-scene');
+                const arSceneContainer = document.getElementById('ar-scene-container');
                 const backButton = document.getElementById('back-button');
                 const arBackButton = document.getElementById('ar-back-button');
                 
                 startScreen.style.display = 'none';
                 scannerScreen.style.display = 'none';
                 stampScreen.style.display = 'none';
-                arScene.style.display = 'none';
+                arSceneContainer.style.display = 'none';
                 backButton.style.display = 'none';
                 arBackButton.style.display = 'none';
 
                 if (screenId === 'start') {
                     startScreen.style.display = 'flex';
+                    this.stopScanner();
                 } else if (screenId === 'scanner') {
                     scannerScreen.style.display = 'flex';
                     backButton.style.display = 'block';
                     this.startScanner();
+                    this.stopAR();
                     log('Switched to scanner screen');
                 } else if (screenId === 'stamps') {
                     stampScreen.style.display = 'block';
                     backButton.style.display = 'block';
                     this.renderStamps();
+                    this.stopScanner();
+                    this.stopAR();
+                    log('Switched to stamps screen');
                 } else if (screenId === 'ar') {
-                    arScene.style.display = 'block';
+                    arSceneContainer.style.display = 'block';
                     arBackButton.style.display = 'block';
+                    this.stopScanner();
                     this.startAR();
+                    log('Switched to AR screen');
                 }
             },
 
@@ -458,14 +475,15 @@
              * @param {HTMLVideoElement} video - ビデオ要素
              */
             scanLoop(video) {
+                if (this.currentScreen !== 'scanner') return;
+
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const context = canvas.getContext('2d', { willReadFrequently: true });
-                let scanning = true;
-
+                
                 const tick = () => {
-                    if (!scanning || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                    if (this.currentScreen !== 'scanner' || video.readyState !== video.HAVE_ENOUGH_DATA) {
                         requestAnimationFrame(tick);
                         return;
                     }
@@ -478,15 +496,11 @@
 
                     if (code) {
                         log(`QR Code detected: ${code.data}`);
-                        scanning = false; // スキャン成功したらループ停止
                         this.handleQRCode(code.data);
-                    }
-
-                    if (scanning) {
+                    } else {
                         requestAnimationFrame(tick);
                     }
                 };
-
                 requestAnimationFrame(tick);
             },
             
@@ -497,6 +511,7 @@
                 const video = document.getElementById('qr-video');
                 if (video.srcObject) {
                     video.srcObject.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
                 }
                 log('QR scanning stopped.');
             },
@@ -505,10 +520,11 @@
              * ARシーンを停止
              */
             stopAR() {
-                // AR.jsの停止は、`a-scene`の表示を非表示にするだけでOK
                 const arScene = document.querySelector('a-scene');
                 if (arScene) {
-                     arScene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false;'); // 初期化状態に戻す
+                    // AR.jsのカメラを停止
+                    arScene.pause();
+                    arScene.flushToDOM(true);
                 }
                 log('AR scene stopped.');
             },
@@ -517,8 +533,10 @@
              * ARシーンを開始
              */
             startAR() {
-                // AR.jsは画面が表示されると自動的にカメラを開始します。
-                // したがって、この関数では特別な処理は不要です。
+                const arScene = document.querySelector('a-scene');
+                if (arScene) {
+                    arScene.play();
+                }
                 log('AR scene started.');
             },
 
@@ -597,18 +615,12 @@
                     return;
                 }
                 
-                // 既存のAR要素があれば削除
-                const existingModel = arScene.querySelector('#ar-model');
-                if (existingModel) {
-                    arScene.removeChild(existingModel);
-                }
-
-                // AR表示のメッセージを表示
+                // AR表示のメッセージを更新
                 const arMessage = document.getElementById('ar-message');
                 arMessage.style.display = 'block';
                 arMessage.innerHTML = `
                     <h3>${this.stamps[stampType].name}のARを表示中</h3>
-                    <p>デバイスを動かしてARモデルを探してください。</p>
+                    <p>カメラを<a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt" target="_blank" style="color: yellow; text-decoration: underline;">Hiroマーカー</a>に向けてください。</p>
                 `;
                 
                 // 画面をARシーンに切り替え
@@ -629,7 +641,7 @@
         // デバッグ用：キーボードショートカット
         document.addEventListener('keydown', (e) => {
             // 数字キー1-6でスタンプ追加
-            if (app && app.currentScreen === 'scanner' && e.key >= '1' && e.key <= '6') {
+            if (e.key >= '1' && e.key <= '6') {
                 const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
                 const stampType = stamps[parseInt(e.key) - 1];
                 app.collectStamp(stampType);
@@ -638,7 +650,7 @@
             }
             
             // テスト用：QRスキャンテスト（スペースキー）
-            if (app && e.key === ' ' && app.currentScreen === 'scanner') {
+            if (e.key === ' ' && app.currentScreen === 'scanner') {
                 e.preventDefault();
                 app.log('Space key test - simulating QR detection');
                 // テスト用のダミーURLに変更
