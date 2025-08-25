@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
     <title>文化祭 ARスタンプラリー</title>
     <!-- jsQRライブラリをCDNから読み込みます -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js" async></script>
     <!-- A-FrameライブラリをCDNから読み込みます -->
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js" async></script>
     <style>
         /* Base styles */
         * {
@@ -149,6 +149,15 @@
             text-align: center;
             backdrop-filter: blur(10px);
             pointer-events: all; /* Make instruction text interactive */
+        }
+        
+        #loading-message {
+            margin-top: 20px;
+            color: #ccc;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+            pointer-events: all;
         }
 
         #back-btn {
@@ -462,6 +471,7 @@
                 <div id="scan-instruction">
                     📱 QRコードを緑の枠内に合わせてください
                 </div>
+                <div id="loading-message">カメラを起動中...</div>
             </div>
             <button id="back-btn">← 戻る</button>
         </div>
@@ -582,7 +592,6 @@
                 this.stamps = this.loadStamps();
                 this.video = document.getElementById('video-preview');
                 this.canvas = document.getElementById('scan-canvas');
-                // willReadFrequently: true を設定して、getImageDataのパフォーマンスを向上させます
                 this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
                 this.isScanning = false;
                 this.rafHandle = null;
@@ -590,7 +599,7 @@
                 this.bindEvents();
                 this.updateStampSheet();
                 
-                console.log('AR Stamp Rally initialized');
+                this.log('AR Stamp Rally initialized');
             }
 
             /**
@@ -604,17 +613,17 @@
 
                 this.startBtn = document.getElementById('start-btn');
                 this.backBtn = document.getElementById('back-btn');
-                this.continueBtn = document.getElementById('continue-btn');
                 this.scanMoreBtn = document.getElementById('scan-more-btn');
                 this.shareBtn = document.getElementById('share-btn');
                 this.resetBtn = document.getElementById('reset-btn');
                 
                 // QRコード認識枠
                 this.scanFrame = document.getElementById('scan-frame');
+                this.scanInstruction = document.getElementById('scan-instruction');
+                this.loadingMessage = document.getElementById('loading-message');
 
                 this.arScene = document.getElementById('ar-scene');
                 this.mascot = document.getElementById('mascot');
-                this.arMessage = document.getElementById('ar-message');
 
                 this.stampCount = document.getElementById('stamp-count');
                 this.progressFill = document.getElementById('progress-fill');
@@ -656,17 +665,18 @@
                 this.errorMessage.textContent = message;
                 this.errorBox.style.display = 'block';
                 setTimeout(() => {
-                    this.errorBox.style.display = 'none';
+                    this.hideError();
                 }, 8000); // メッセージを読むための十分な時間を確保
             }
             
             /**
-             * エラーメッセージを非表示にします。
+             * カスタムエラーメッセージを非表示にします。
              */
             hideError() {
                 this.errorBox.style.display = 'none';
+                this.errorMessage.textContent = '';
             }
-
+            
             /**
              * 確認モーダルを表示します。
              * @param {string} message - 表示する確認メッセージ
@@ -737,22 +747,55 @@
                 this.showScreen('scanner');
                 this.hideError();
 
+                // カメラ起動中のメッセージを表示
+                this.scanInstruction.style.display = 'none';
+                this.loadingMessage.style.display = 'block';
+
                 // 既存のスキャナーを停止
                 this.stopScanner();
+                
+                // jsQRが利用可能になるまで待機
+                // ライブラリの読み込みが非同期であるため、このチェックが必要です。
+                const checkJsQR = () => {
+                    if (typeof jsQR !== 'undefined') {
+                        this.log('jsQR is loaded, proceeding with camera start.');
+                        this.startCamera();
+                    } else {
+                        this.log('Waiting for jsQR to load...');
+                        setTimeout(checkJsQR, 100);
+                    }
+                };
 
+                // 初回チェックを開始
+                checkJsQR();
+            }
+
+            /**
+             * カメラを起動してスキャンを開始します。
+             */
+            async startCamera() {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    this.showError('お使いのブラウザはカメラ機能をサポートしていません。');
+                    this.showScreen('start');
+                    this.loadingMessage.style.display = 'none';
+                    return;
+                }
+                
                 try {
-                    // 環境に応じて適切なカメラ制約を設定
                     const constraints = { video: { facingMode: 'environment' } };
                     const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     this.video.srcObject = stream;
                     this.video.setAttribute('playsinline', true);
-                    this.video.play();
+                    await this.video.play();
                     this.isScanning = true;
                     this.tick();
                     this.log('Scanner started successfully.');
+                    this.loadingMessage.style.display = 'none';
+                    this.scanInstruction.style.display = 'block';
                 } catch (err) {
                     this.log(`Failed to start scanner: ${err.name}: ${err.message}`);
                     this.stopScanner();
+                    this.loadingMessage.style.display = 'none';
                     let message = 'カメラの起動に失敗しました。';
                     switch(err.name) {
                         case 'NotAllowedError':
@@ -799,33 +842,37 @@
              * 毎フレームごとにQRコードをスキャンします。
              */
             tick() {
-                if (!this.isScanning) return;
+                if (!this.isScanning) {
+                    return;
+                }
                 
                 // カメラの映像が十分に読み込まれたか確認
                 if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
-                    this.canvas.height = this.video.videoHeight;
+                    // キャンバスのサイズを動画のサイズに合わせる
                     this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+
+                    // カメラの映像をキャンバスに描画
                     this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
 
-                    // Canvasから画像データを取得し、jsQRで解析
+                    // キャンバスから画像データを取得し、jsQRで解析
                     const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert", // 反転したQRコードを検出しない
+                        inversionAttempts: "dontInvert",
                     });
 
-                    // QRコードが見つかった場合
                     if (code) {
                         this.log(`QR Code detected: ${code.data}`);
-                        // スキャンを停止し、視覚的なフィードバックを表示
-                        this.isScanning = false;
+                        this.isScanning = false; // スキャンを停止
                         this.scanFrame.classList.add('recognized');
                         
                         setTimeout(() => {
                             this.handleQRCode(code.data);
-                        }, 500); // ユーザーが認識を確認できるよう、0.5秒の遅延を追加
-                        return; // QRコードが見つかったらループを抜ける
+                        }, 500); // 認識したQRコードをユーザーが確認できるよう、0.5秒の遅延を追加
+                        return;
                     }
                 }
+
                 // 次のフレームでtick関数を再実行
                 this.rafHandle = requestAnimationFrame(() => this.tick());
             }
@@ -993,6 +1040,7 @@
              */
             showStampSheet() {
                 this.stopScanner();
+                this.updateStampSheet(); // 更新を確実に行う
                 this.showScreen('stamp-sheet');
             }
 
@@ -1031,16 +1079,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             const app = new ARStampRally();
 
-            // デバッグ用ショートカットキー（テストを容易にするため）
-            document.addEventListener('keydown', (e) => {
-                // 1-6キーでスタンプを追加
-                if (e.key >= '1' && e.key <= '6') {
-                    const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
-                    const stampType = stamps[parseInt(e.key) - 1];
-                    app.collectStamp(stampType);
-                    app.showAR(stampType);
-                    app.log(`Debug: Added stamp ${stampType}`);
-                }
+            // A-Frameシーンの初期化を確実に行うためのチェック
+            const aScene = document.getElementById('ar-scene');
+            aScene.addEventListener('loaded', () => {
+                // A-Frameシーンが読み込まれた後の処理
+                console.log('A-Frame scene loaded.');
             });
         });
     </script>
