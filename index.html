@@ -277,12 +277,13 @@
     <!-- AR.jsのデバッグを無効にし、マーカー認識なしで表示 -->
     <a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-assets>
-            <!-- 検証用の3Dモデル -->
-            <a-asset-item id="rocket-model" src="https://cdn.aframe.io/examples/ar/glyph/models/rocket/rocket.gltf"></a-asset-item>
+            <!-- ユーザーの要望に合わせて3Dモデルをcrystal_stone_rock.glbに変更 -->
+            <a-asset-item id="crystal-stone-model" src="https://cdn.aframe.io/examples/gltf-model/crystal-stone/crystal_stone_rock.glb"></a-asset-item>
         </a-assets>
 
         <!-- マーカーなしで常に画面中央にモデルを表示 -->
-        <a-entity gltf-model="#rocket-model" position="0 0 -5" scale="0.5 0.5 0.5" rotation="0 0 0" class="ar-content"></a-entity>
+        <!-- 画面中央に来るように位置とサイズを調整 -->
+        <a-entity gltf-model="#crystal-stone-model" position="0 0 -3" scale="0.1 0.1 0.1" rotation="0 0 0" class="ar-content"></a-entity>
 
         <a-camera></a-camera>
     </a-scene>
