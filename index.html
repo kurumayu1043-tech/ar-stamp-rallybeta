@@ -123,6 +123,14 @@
             animation: scan-pulse 2s infinite;
         }
 
+        /* New CSS class for successful scan */
+        #scan-frame.recognized {
+            animation: none;
+            border-color: #8A2BE2; /* Purple */
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(138, 43, 226, 0.5);
+            transition: border-color 0.5s, box-shadow 0.5s;
+        }
+
         @keyframes scan-pulse {
             0%, 100% {
                 border-color: #00ff00;
@@ -588,6 +596,9 @@
                 this.scanMoreBtn = document.getElementById('scan-more-btn');
                 this.shareBtn = document.getElementById('share-btn');
                 this.resetBtn = document.getElementById('reset-btn');
+                
+                // QR code recognition frame
+                this.scanFrame = document.getElementById('scan-frame');
 
                 this.arScene = document.getElementById('ar-scene');
                 this.mascot = document.getElementById('mascot');
@@ -666,6 +677,7 @@
                         break;
                     case 'scanner':
                         this.scannerScreen.style.display = 'flex';
+                        this.scanFrame.classList.remove('recognized'); // Reset frame color
                         break;
                     case 'ar':
                         this.arScreen.style.display = 'block';
@@ -753,7 +765,14 @@
 
                     if (code) {
                         this.log(`QR Code detected: ${code.data}`);
-                        this.handleQRCode(code.data);
+                        // 読み取り成功時の処理：スキャンを停止し、視覚的なフィードバックを表示
+                        this.isScanning = false;
+                        this.scanFrame.classList.add('recognized');
+                        
+                        setTimeout(() => {
+                            this.handleQRCode(code.data);
+                        }, 500); // ユーザーが認識を確認できるよう、0.5秒の遅延を追加
+                        return; // QRコードが見つかったらループを抜ける
                     }
                 }
                 this.rafHandle = requestAnimationFrame(() => this.tick());
