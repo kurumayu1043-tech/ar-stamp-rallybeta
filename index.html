@@ -273,7 +273,7 @@
 
         <!-- A-Frame AR Scene -->
         <a-scene id="ar-scene" embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-            <a-camera gps-camera rotation-reader></a-camera>
+            <a-camera></a-camera>
         </a-scene>
         
         <!-- AR表示中に表示するメッセージ -->
@@ -513,13 +513,7 @@
             startAR() {
                 const arScene = document.getElementById('ar-scene');
                 // AR.jsのカメラを再起動
-                const camera = arScene.querySelector('a-camera');
-                if (camera) {
-                    // AR.jsが自動的にカメラを起動するため、明示的な処理は不要
-                    // ただし、ARシーンを再表示する際に`arjs`属性を再設定するなど、
-                    // 強制的に再初期化が必要な場合がある
-                    // 今回は、showScreenでarSceneをdisplay:blockにするだけで対応
-                }
+                // 明示的な処理は不要。showScreenでarSceneをdisplay:blockにするだけで対応
             },
 
             /**
@@ -614,7 +608,8 @@
                 // ARシーンに3Dモデルを追加
                 const arElement = document.createElement('a-entity');
                 arElement.setAttribute('id', 'ar-model');
-                arElement.setAttribute('gltf-model', '#crystal-stone-rock');
+                // サンプルモデルに変更して検証
+                arElement.setAttribute('gltf-model', '#rocket-model');
                 arElement.setAttribute('position', '0 0 -5');
                 arElement.setAttribute('scale', '0.5 0.5 0.5');
 
@@ -634,7 +629,7 @@
         // ロードする3Dモデルを事前に定義
         const aFrameAssets = document.createElement('a-assets');
         aFrameAssets.innerHTML = `
-            <a-asset-item id="crystal-stone-rock" src="uploaded:crystal_stone_rock.glb"></a-asset-item>
+            <a-asset-item id="rocket-model" src="https://cdn.aframe.io/examples/ar/glyph/models/rocket/rocket.gltf"></a-asset-item>
         `;
         document.getElementById('ar-scene').appendChild(aFrameAssets);
 
