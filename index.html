@@ -4,8 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
     <title>文化祭 ARスタンプラリー</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -26,6 +24,39 @@
             height: 100vh;
         }
         
+        /* ローディング画面 */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255,255,255,0.3);
+            border-top: 6px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         /* スタート画面 */
         #start-screen {
             position: fixed;
@@ -35,7 +66,7 @@
             height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            display: flex;
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -373,6 +404,13 @@
 </head>
 <body>
     <div id="app">
+        <!-- ローディング画面 -->
+        <div id="loading-screen">
+            <div class="loading-spinner"></div>
+            <h2>ARスタンプラリーを準備中...</h2>
+            <p>ライブラリを読み込んでいます</p>
+        </div>
+
         <!-- スタート画面 -->
         <div id="start-screen">
             <h1>🎪 文化祭スタンプラリー</h1>
@@ -561,6 +599,11 @@
         <a-camera look-controls-enabled="false" wasd-controls-enabled="false"></a-camera>
     </a-scene>
 
+    <!-- jsQRライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <!-- A-Frameライブラリ -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
     <script>
         class ARStampRally {
             constructor() {
@@ -584,6 +627,7 @@
             
             initElements() {
                 // 画面要素
+                this.loadingScreen = document.getElementById('loading-screen');
                 this.startScreen = document.getElementById('start-screen');
                 this.scannerScreen = document.getElementById('scanner-screen');
                 this.arScreen = document.getElementById('ar-screen');
@@ -634,11 +678,14 @@
             
             showScreen(screenName) {
                 // 全画面を非表示
-                [this.startScreen, this.scannerScreen, this.arScreen, this.stampSheet]
+                [this.loadingScreen, this.startScreen, this.scannerScreen, this.arScreen, this.stampSheet]
                     .forEach(screen => screen.style.display = 'none');
                 
                 // 指定画面を表示
                 switch(screenName) {
+                    case 'loading':
+                        this.loadingScreen.style.display = 'flex';
+                        break;
                     case 'start':
                         this.startScreen.style.display = 'flex';
                         break;
@@ -683,6 +730,7 @@
                 } catch (error) {
                     this.log(`Camera error: ${error.message}`);
                     alert('カメラにアクセスできませんでした。ブラウザの設定を確認してください。');
+                    this.showStampSheet();
                 }
             }
             
@@ -839,19 +887,24 @@
                 // URLパラメータやハッシュでスタンプ種類を判定
                 // 例: ?stamp=entrance, #stage など
                 
-                const url = new URL(qrData);
-                const stampParam = url.searchParams.get('stamp') || 
-                                 url.hash.substring(1) ||
-                                 'entrance'; // デフォルト
-                
-                const validStamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
-                
-                if (validStamps.includes(stampParam)) {
-                    return stampParam;
+                try {
+                    const url = new URL(qrData);
+                    const stampParam = url.searchParams.get('stamp') || 
+                                     url.hash.substring(1) ||
+                                     'entrance'; // デフォルト
+                    
+                    const validStamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
+                    
+                    if (validStamps.includes(stampParam)) {
+                        return stampParam;
+                    }
+                } catch (error) {
+                    this.log(`Error parsing URL: ${error.message}`);
                 }
                 
                 // ランダムに決定（デモ用）
-                const unCollected = validStamps.filter(stamp => !this.stamps[stamp]);
+                const validStamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
+                const unCollected = validStamps.filter(stamp => !this.stamps[stamp].collected);
                 if (unCollected.length > 0) {
                     return unCollected[Math.floor(Math.random() * unCollected.length)];
                 }
@@ -860,7 +913,7 @@
             }
             
             collectStamp(stampType) {
-                if (!this.stamps[stampType]) {
+                if (!this.stamps[stampType].collected) {
                     this.stamps[stampType] = {
                         collected: true,
                         timestamp: new Date().toLocaleString()
@@ -907,6 +960,7 @@
                 this.arScene.style.display = 'none';
                 this.mascot.setAttribute('visible', false);
                 this.arMessage.style.display = 'none';
+                document.getElementById('continue-btn').style.display = 'none';
                 
                 this.showScreen('stamp-sheet');
                 this.updateStampSheet();
@@ -1048,55 +1102,119 @@
             
             loadStamps() {
                 try {
-                    const saved = localStorage.getItem('ar-stamp-rally-stamps');
-                    if (saved) {
-                        return JSON.parse(saved);
+                    // localStorage使用不可のため、セッション内でのみデータを保持
+                    if (window.stampData) {
+                        return window.stampData;
                     }
                 } catch (error) {
-                    this.log('Error loading stamps from localStorage');
+                    this.log('Error loading stamps from memory');
                 }
                 return this.getDefaultStamps();
             }
             
             saveStamps() {
                 try {
-                    localStorage.setItem('ar-stamp-rally-stamps', JSON.stringify(this.stamps));
+                    // localStorage使用不可のため、windowオブジェクトに保存
+                    window.stampData = this.stamps;
                 } catch (error) {
-                    this.log('Error saving stamps to localStorage');
+                    this.log('Error saving stamps to memory');
                 }
             }
+        }
+        
+        // ライブラリ読み込み完了チェック関数
+        function checkLibrariesLoaded() {
+            return new Promise((resolve, reject) => {
+                let checkCount = 0;
+                const maxChecks = 30; // 3秒間チェック
+                
+                const checkInterval = setInterval(() => {
+                    checkCount++;
+                    
+                    // jsQRとA-Frameの両方が読み込まれているかチェック
+                    const jsQRLoaded = typeof jsQR !== 'undefined';
+                    const aFrameLoaded = typeof AFRAME !== 'undefined';
+                    
+                    console.log(`Library check ${checkCount}: jsQR=${jsQRLoaded}, A-Frame=${aFrameLoaded}`);
+                    
+                    if (jsQRLoaded && aFrameLoaded) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    } else if (checkCount >= maxChecks) {
+                        clearInterval(checkInterval);
+                        reject(new Error('Libraries failed to load within timeout'));
+                    }
+                }, 100);
+            });
         }
         
         // アプリケーション初期化
         let app;
         
-        window.addEventListener('load', () => {
+        // DOMContentLoadedイベントで初期化開始
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('🎪 AR Stamp Rally - Festival Edition');
-            console.log('Target QR Code: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/');
-            console.log('📱 Test Instructions:');
-            console.log('  • Ctrl+D: Toggle debug mode (accepts any QR)');
-            console.log('  • Space: Test QR detection (when scanning)');
-            console.log('  • Triple tap: Mobile test QR detection');
-            console.log('  • 1-6 keys: Add test stamps (debug mode)');
+            console.log('Starting library check...');
             
-            app = new ARStampRally();
-            
-            // QRコード生成の提案をコンソールに表示
-            console.log('\n🎯 QR Code Setup Instructions:');
-            console.log('Create QR codes with these URLs:');
-            console.log('  正門: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=entrance');
-            console.log('  ステージ: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=stage');
-            console.log('  食堂: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=food');
-            console.log('  ゲーム: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=game');
-            console.log('  展示: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=art');
-            console.log('  特別: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=special');
-            
-            // jsQRライブラリの確認
-            if (typeof jsQR !== 'undefined') {
-                console.log('✅ jsQR library loaded successfully');
-            } else {
-                console.error('❌ jsQR library not loaded');
-                alert('QRコード読み取りライブラリの読み込みに失敗しました。ページを再読み込みしてください。');
+            try {
+                // ライブラリの読み込み完了を待機
+                await checkLibrariesLoaded();
+                
+                console.log('✅ All libraries loaded successfully');
+                console.log('Target QR Code: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/');
+                console.log('📱 Test Instructions:');
+                console.log('  • Ctrl+D: Toggle debug mode (accepts any QR)');
+                console.log('  • Space: Test QR detection (when scanning)');
+                console.log('  • Triple tap: Mobile test QR detection');
+                console.log('  • 1-6 keys: Add test stamps (debug mode)');
+                
+                // QRコード生成の提案をコンソールに表示
+                console.log('\n🎯 QR Code Setup Instructions:');
+                console.log('Create QR codes with these URLs:');
+                console.log('  正門: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=entrance');
+                console.log('  ステージ: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=stage');
+                console.log('  食堂: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=food');
+                console.log('  ゲーム: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=game');
+                console.log('  展示: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=art');
+                console.log('  特別: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=special');
+                
+                // アプリケーションを初期化
+                app = new ARStampRally();
+                
+                // ローディング画面からスタート画面に切り替え
+                setTimeout(() => {
+                    app.showScreen('start');
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Library loading failed:', error);
+                
+                // エラー画面を表示
+                const loadingScreen = document.getElementById('loading-screen');
+                loadingScreen.innerHTML = `
+                    <div style="text-align: center;">
+                        <h2 style="color: #ff6b6b; margin-bottom: 20px;">⚠️ 読み込みエラー</h2>
+                        <p style="margin-bottom: 15px;">必要なライブラリの読み込みに失敗しました。</p>
+                        <p style="margin-bottom: 25px;">インターネット接続を確認して、ページを再読み込みしてください。</p>
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+                            border: none;
+                            color: white;
+                            padding: 15px 30px;
+                            font-size: 16px;
+                            border-radius: 25px;
+                            cursor: pointer;
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                        ">🔄 再読み込み</button>
+                    </div>
+                `;
+                
+                // 5秒後に自動リロードを試行
+                setTimeout(() => {
+                    if (confirm('ページを自動で再読み込みしますか？')) {
+                        location.reload();
+                    }
+                }, 5000);
             }
         });
         
