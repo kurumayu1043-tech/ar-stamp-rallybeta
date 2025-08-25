@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
     <title>文化祭 ARスタンプラリー</title>
-    <!-- jsQR library for QR code scanning -->
+    <!-- jsQRライブラリをCDNから読み込みます -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-    <!-- A-Frame library for AR experience -->
+    <!-- A-FrameライブラリをCDNから読み込みます -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
         /* Base styles */
@@ -29,7 +29,7 @@
             height: 100vh;
         }
 
-        /* Start screen styles */
+        /* スタート画面 */
         #start-screen {
             position: fixed;
             top: 0;
@@ -77,7 +77,7 @@
             box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
         }
 
-        /* QR scanner screen styles */
+        /* QRスキャナー画面 */
         #scanner-screen {
             position: fixed;
             top: 0;
@@ -123,10 +123,10 @@
             animation: scan-pulse 2s infinite;
         }
 
-        /* New CSS class for successful scan */
+        /* 認識成功時のCSSクラス */
         #scan-frame.recognized {
             animation: none;
-            border-color: #8A2BE2; /* Purple */
+            border-color: #8A2BE2; /* 紫色 */
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(138, 43, 226, 0.5);
             transition: border-color 0.5s, box-shadow 0.5s;
         }
@@ -166,7 +166,7 @@
             z-index: 10;
         }
 
-        /* AR display screen styles */
+        /* AR表示画面 */
         #ar-screen {
             position: fixed;
             top: 0;
@@ -234,7 +234,7 @@
             pointer-events: all;
         }
 
-        /* Stamp sheet screen styles */
+        /* スタンプシート画面 */
         #stamp-sheet {
             position: fixed;
             top: 0;
@@ -357,7 +357,7 @@
             color: #667eea;
         }
 
-        /* Custom error message box */
+        /* カスタムエラーメッセージボックス */
         #error-box {
             position: fixed;
             top: 50%;
@@ -388,7 +388,7 @@
             }
         }
 
-        /* Custom confirmation modal for reset */
+        /* カスタム確認モーダル */
         #confirm-modal {
             position: fixed;
             top: 0;
@@ -439,7 +439,7 @@
 </head>
 <body>
     <div id="app">
-        <!-- Start screen -->
+        <!-- スタート画面 -->
         <div id="start-screen">
             <h1>🎪 文化祭スタンプラリー</h1>
             <p class="subtitle">QRコードを読み込んでARマスコットに会おう！</p>
@@ -453,7 +453,7 @@
             </div>
         </div>
 
-        <!-- QR scanner screen -->
+        <!-- QRスキャナー画面 -->
         <div id="scanner-screen">
             <video id="video-preview" autoplay playsinline></video>
             <canvas id="scan-canvas" style="display: none;"></canvas>
@@ -466,7 +466,7 @@
             <button id="back-btn">← 戻る</button>
         </div>
 
-        <!-- AR display screen -->
+        <!-- AR表示画面 -->
         <div id="ar-screen">
             <a-scene
                 id="ar-scene"
@@ -500,7 +500,7 @@
             </a-scene>
         </div>
 
-        <!-- Stamp sheet screen -->
+        <!-- スタンプシート画面 -->
         <div id="stamp-sheet">
             <div class="stamp-sheet-header">
                 <h2>🎪 スタンプシート</h2>
@@ -552,12 +552,12 @@
             </div>
         </div>
 
-        <!-- Custom error message box -->
+        <!-- カスタムエラーメッセージボックス -->
         <div id="error-box">
             <p id="error-message"></p>
         </div>
 
-        <!-- Custom confirmation modal for reset -->
+        <!-- カスタム確認モーダル -->
         <div id="confirm-modal">
             <div id="confirm-box">
                 <p id="confirm-message">スタンプシートをリセットしますか？</p>
@@ -568,12 +568,21 @@
     </div>
 
     <script>
+        /**
+         * ARStampRallyクラス
+         * ARスタンプラリーアプリケーションの主要なロジックを管理します。
+         */
         class ARStampRally {
+            /**
+             * コンストラクタ
+             * アプリケーションの状態を初期化し、DOM要素を取得し、イベントリスナーをバインドします。
+             */
             constructor() {
                 this.currentScreen = 'start';
                 this.stamps = this.loadStamps();
                 this.video = document.getElementById('video-preview');
                 this.canvas = document.getElementById('scan-canvas');
+                // willReadFrequently: true を設定して、getImageDataのパフォーマンスを向上させます
                 this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
                 this.isScanning = false;
                 this.rafHandle = null;
@@ -584,6 +593,9 @@
                 console.log('AR Stamp Rally initialized');
             }
 
+            /**
+             * 必要なDOM要素を取得します。
+             */
             initElements() {
                 this.startScreen = document.getElementById('start-screen');
                 this.scannerScreen = document.getElementById('scanner-screen');
@@ -597,7 +609,7 @@
                 this.shareBtn = document.getElementById('share-btn');
                 this.resetBtn = document.getElementById('reset-btn');
                 
-                // QR code recognition frame
+                // QRコード認識枠
                 this.scanFrame = document.getElementById('scan-frame');
 
                 this.arScene = document.getElementById('ar-scene');
@@ -614,6 +626,9 @@
                 this.confirmNoBtn = document.getElementById('confirm-no');
             }
 
+            /**
+             * 主要なイベントリスナーをバインドします。
+             */
             bindEvents() {
                 this.startBtn.addEventListener('click', () => this.showScanner());
                 this.backBtn.addEventListener('click', () => this.showStampSheet());
@@ -625,22 +640,38 @@
                 }));
             }
             
+            /**
+             * コンソールにログを出力します。
+             * @param {string} message - 出力するメッセージ
+             */
             log(message) {
                 console.log(message);
             }
 
+            /**
+             * カスタムエラーメッセージを表示します。
+             * @param {string} message - 表示するエラーメッセージ
+             */
             showError(message) {
                 this.errorMessage.textContent = message;
                 this.errorBox.style.display = 'block';
                 setTimeout(() => {
                     this.errorBox.style.display = 'none';
-                }, 8000); // Wait longer for the user to read the message
+                }, 8000); // メッセージを読むための十分な時間を確保
             }
             
+            /**
+             * エラーメッセージを非表示にします。
+             */
             hideError() {
                 this.errorBox.style.display = 'none';
             }
 
+            /**
+             * 確認モーダルを表示します。
+             * @param {string} message - 表示する確認メッセージ
+             * @param {Function} onConfirm - 「はい」がクリックされたときに実行するコールバック関数
+             */
             showConfirmModal(message, onConfirm) {
                 document.getElementById('confirm-message').textContent = message;
                 this.confirmModal.style.display = 'flex';
@@ -661,23 +692,30 @@
                 this.confirmNoBtn.addEventListener('click', noHandler);
             }
 
+            /**
+             * 確認モーダルを非表示にします。
+             */
             hideConfirmModal() {
                 this.confirmModal.style.display = 'none';
             }
 
+            /**
+             * 指定された画面に切り替えます。
+             * @param {string} screenName - 切り替える画面の名前 ('start', 'scanner', 'ar', 'stamp-sheet')
+             */
             showScreen(screenName) {
-                // Hide all screens
+                // 全ての画面を非表示にする
                 [this.startScreen, this.scannerScreen, this.arScreen, this.stampSheet]
                 .forEach(screen => screen.style.display = 'none');
 
-                // Show the selected screen
+                // 選択された画面を表示する
                 switch (screenName) {
                     case 'start':
                         this.startScreen.style.display = 'flex';
                         break;
                     case 'scanner':
                         this.scannerScreen.style.display = 'flex';
-                        this.scanFrame.classList.remove('recognized'); // Reset frame color
+                        this.scanFrame.classList.remove('recognized'); // フレームの色をリセット
                         break;
                     case 'ar':
                         this.arScreen.style.display = 'block';
@@ -690,16 +728,20 @@
                 this.log(`Switched to ${screenName} screen`);
             }
             
-            // --- QR Scanner with jsQR ---
+            // --- QRスキャナーの実装 (jsQRを使用) ---
+            /**
+             * QRスキャナーを開始します。
+             */
             async showScanner() {
                 this.log('Attempting to start QR scanner...');
                 this.showScreen('scanner');
                 this.hideError();
 
-                // Stop any existing scanner first
+                // 既存のスキャナーを停止
                 this.stopScanner();
 
                 try {
+                    // 環境に応じて適切なカメラ制約を設定
                     const constraints = { video: { facingMode: 'environment' } };
                     const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     this.video.srcObject = stream;
@@ -737,6 +779,9 @@
                 }
             }
 
+            /**
+             * QRスキャナーを停止します。
+             */
             stopScanner() {
                 if (this.rafHandle) {
                     cancelAnimationFrame(this.rafHandle);
@@ -750,22 +795,28 @@
                 this.log('QR scanning stopped.');
             }
 
+            /**
+             * 毎フレームごとにQRコードをスキャンします。
+             */
             tick() {
                 if (!this.isScanning) return;
                 
+                // カメラの映像が十分に読み込まれたか確認
                 if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
                     this.canvas.height = this.video.videoHeight;
                     this.canvas.width = this.video.videoWidth;
                     this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
 
+                    // Canvasから画像データを取得し、jsQRで解析
                     const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
+                        inversionAttempts: "dontInvert", // 反転したQRコードを検出しない
                     });
 
+                    // QRコードが見つかった場合
                     if (code) {
                         this.log(`QR Code detected: ${code.data}`);
-                        // 読み取り成功時の処理：スキャンを停止し、視覚的なフィードバックを表示
+                        // スキャンを停止し、視覚的なフィードバックを表示
                         this.isScanning = false;
                         this.scanFrame.classList.add('recognized');
                         
@@ -775,29 +826,37 @@
                         return; // QRコードが見つかったらループを抜ける
                     }
                 }
+                // 次のフレームでtick関数を再実行
                 this.rafHandle = requestAnimationFrame(() => this.tick());
             }
 
+            /**
+             * 読み取ったQRコードのデータを処理します。
+             * @param {string} data - QRコードから取得したテキストデータ
+             */
             handleQRCode(data) {
                 this.log(`Handling QR Code data: ${data}`);
                 
                 try {
+                    // データがURL形式の場合
                     const url = new URL(data);
                     const stampType = url.searchParams.get('stamp');
                     if (stampType) {
-                        this.log(`Stamp type found: ${stampType}`);
+                        this.log(`Stamp type found in URL: ${stampType}`);
                         this.collectStamp(stampType);
                     } else {
+                        // URL形式だが、'stamp'パラメータがない場合
                         const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
                         if (stamps.includes(data)) {
-                            this.log(`Simple stamp string found: ${data}`);
+                             this.log(`Simple stamp string found: ${data}`);
                             this.collectStamp(data);
                         } else {
                             this.showError('無効なQRコードです。イベントのQRコードか確認してください。');
                         }
                     }
                 } catch (e) {
-                    this.log('QR code data is not a valid URL.');
+                    // データがURL形式ではない場合
+                    this.log('QR code data is not a valid URL. Checking for simple stamp string...');
                     const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
                     if (stamps.includes(data)) {
                         this.log(`Simple stamp string found: ${data}`);
@@ -808,6 +867,10 @@
                 }
             }
 
+            /**
+             * localStorageからスタンプデータをロードします。
+             * @returns {Object} ロードされたスタンプデータ
+             */
             loadStamps() {
                 try {
                     const stamps = JSON.parse(localStorage.getItem('stamps')) || {};
@@ -819,6 +882,9 @@
                 }
             }
 
+            /**
+             * localStorageにスタンプデータを保存します。
+             */
             saveStamps() {
                 try {
                     localStorage.setItem('stamps', JSON.stringify(this.stamps));
@@ -828,6 +894,10 @@
                 }
             }
 
+            /**
+             * スタンプを収集し、スタンプシートを更新します。
+             * @param {string} stampType - 収集するスタンプのタイプ
+             */
             collectStamp(stampType) {
                 if (!this.stamps[stampType]) {
                     this.stamps[stampType] = {
@@ -844,6 +914,9 @@
                 }
             }
 
+            /**
+             * スタンプシートの表示を更新します。
+             */
             updateStampSheet() {
                 const stampSlots = document.querySelectorAll('.stamp-slot');
                 let collectedCount = 0;
@@ -868,6 +941,10 @@
                 this.progressFill.textContent = `${progress.toFixed(0)}%`;
             }
 
+            /**
+             * AR画面を表示します。
+             * @param {string} stampType - 取得したスタンプのタイプ
+             */
             showAR(stampType) {
                 this.log(`Showing AR for: ${stampType}`);
                 this.stopScanner();
@@ -882,9 +959,10 @@
                     'special': '特別ブース'
                 };
                 
-                // Remove existing AR message if any
-                if(this.arMessage) {
-                    this.arMessage.remove();
+                // 既存のARメッセージがあれば削除
+                const existingArMessage = document.getElementById('ar-message');
+                if (existingArMessage) {
+                    existingArMessage.remove();
                 }
 
                 const arMessageElement = document.createElement('div');
@@ -894,12 +972,15 @@
 
                 document.getElementById('continue-btn').addEventListener('click', () => {
                     this.hideAR();
-                }, { once: true }); // Use once: true to prevent multiple event listeners
+                }, { once: true });
 
                 this.arScene.style.display = 'block';
                 this.mascot.setAttribute('visible', 'true');
             }
 
+            /**
+             * AR画面を非表示にします。
+             */
             hideAR() {
                 this.log('Hiding AR screen');
                 this.mascot.setAttribute('visible', 'false');
@@ -907,11 +988,17 @@
                 this.showStampSheet();
             }
 
+            /**
+             * スタンプシート画面を表示します。
+             */
             showStampSheet() {
                 this.stopScanner();
                 this.showScreen('stamp-sheet');
             }
 
+            /**
+             * 結果を共有します。
+             */
             shareResults() {
                 this.log('Sharing results...');
                 const collectedStamps = Object.keys(this.stamps).filter(key => this.stamps[key].collected).length;
@@ -929,6 +1016,9 @@
                 }
             }
 
+            /**
+             * スタンプデータをリセットします。
+             */
             resetStamps() {
                 localStorage.removeItem('stamps');
                 this.stamps = {};
@@ -941,9 +1031,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const app = new ARStampRally();
 
-            // Debug keyboard shortcuts for quick testing
+            // デバッグ用ショートカットキー（テストを容易にするため）
             document.addEventListener('keydown', (e) => {
-                // 1-6 keys to add stamps
+                // 1-6キーでスタンプを追加
                 if (e.key >= '1' && e.key <= '6') {
                     const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
                     const stampType = stamps[parseInt(e.key) - 1];
