@@ -4,11 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
     <title>文化祭 ARスタンプラリー</title>
-    <!-- jsQRライブラリをCDNから読み込みます -->
+    <!-- jsQRライブラリをCDNから読み込み -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-    <!-- A-FrameライブラリをCDNから読み込みます -->
+    <!-- A-FrameライブラリをCDNから読み込み -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
+        /* Base styles */
         * {
             margin: 0;
             padding: 0;
@@ -94,7 +95,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1);
         }
 
         #loading-indicator {
@@ -201,6 +201,18 @@
             width: 100% !important;
             height: 100% !important;
             display: none;
+            z-index: 100; /* Ensure A-Frame is on top */
+        }
+        
+        /* ARJsの動画要素を画面全体に表示 */
+        video.a-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+            z-index: 99;
         }
 
         #ar-message {
@@ -213,7 +225,7 @@
             padding: 15px;
             background-color: rgba(0, 0, 0, 0.5);
             border-radius: 10px;
-            z-index: 10;
+            z-index: 101; /* Ensure message is on top of AR scene */
         }
         
         /* ログコンソール */
@@ -264,9 +276,14 @@
         </div>
 
         <!-- A-Frame AR Scene -->
-        <a-scene id="ar-scene" embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        <a-scene id="ar-scene" embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;">
+            <!-- ARマーカーのコンポーネント (optional, AR.jsのデフォルトマーカーを使用する場合は不要) -->
+            <!-- <a-marker preset="hiro"></a-marker> -->
             <a-camera gps-camera rotation-reader></a-camera>
         </a-scene>
+        
+        <!-- AR表示中に表示するメッセージ -->
+        <div id="ar-message" style="display:none;"></div>
 
         <!-- 戻るボタン -->
         <button id="back-button" aria-label="戻る" style="display: none;">&#8592;</button>
@@ -349,7 +366,10 @@
                 document.getElementById('start-button').addEventListener('click', () => this.showScreen('scanner'));
                 document.getElementById('stamps-button').addEventListener('click', () => this.showScreen('stamps'));
                 document.getElementById('back-button').addEventListener('click', () => this.showScreen('start'));
-                document.getElementById('ar-back-button').addEventListener('click', () => this.showScreen('scanner'));
+                document.getElementById('ar-back-button').addEventListener('click', () => {
+                    this.stopAR(); // ARシーンを停止
+                    this.showScreen('scanner');
+                });
                 document.getElementById('show-start-button').addEventListener('click', () => this.showScreen('start'));
             },
 
@@ -370,7 +390,7 @@
                 startScreen.style.display = 'none';
                 scannerScreen.style.display = 'none';
                 stampScreen.style.display = 'none';
-                if (arScene) arScene.style.display = 'none';
+                arScene.style.display = 'none';
                 backButton.style.display = 'none';
                 arBackButton.style.display = 'none';
 
@@ -386,9 +406,8 @@
                     backButton.style.display = 'block';
                     this.renderStamps();
                 } else if (screenId === 'ar') {
-                    if (arScene) arScene.style.display = 'block';
+                    arScene.style.display = 'block';
                     arBackButton.style.display = 'block';
-                    this.stopScanner();
                 }
             },
 
@@ -403,6 +422,7 @@
                 loadingIndicator.style.display = 'block';
                 scanMessage.textContent = 'カメラを起動中...';
 
+                // 背面カメラを優先的に使用
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                     .then(stream => {
                         video.srcObject = stream;
@@ -410,7 +430,6 @@
                         video.play();
                         
                         video.onloadedmetadata = () => {
-                            video.style.transform = 'scaleX(-1)'; // フロントカメラ使用時の反転
                             loadingIndicator.style.display = 'none';
                             scanMessage.textContent = 'QRコードをスキャンしてください';
                             this.scanLoop(video);
@@ -437,6 +456,8 @@
 
                 const tick = () => {
                     if (!scanning || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                        // ループを続行
+                        requestAnimationFrame(tick);
                         return;
                     }
                     
@@ -470,6 +491,27 @@
                 }
                 log('QR scanning stopped.');
             },
+            
+            /**
+             * ARシーンを停止
+             */
+            stopAR() {
+                const arScene = document.getElementById('ar-scene');
+                if (arScene) {
+                    const existingModel = arScene.querySelector('#ar-model');
+                    if (existingModel) {
+                        arScene.removeChild(existingModel);
+                    }
+                    // A-Frameのカメラを非表示にする
+                    // a-scene自体のdisplayをnoneにすることでカメラも非表示になります
+                    arScene.style.display = 'none';
+                    // AR表示中のメッセージも削除
+                    const arMessage = document.getElementById('ar-message');
+                    if (arMessage) {
+                        arMessage.style.display = 'none';
+                    }
+                }
+            },
 
             /**
              * QRコードデータの処理
@@ -489,7 +531,8 @@
                     }
                 } else {
                     log('Invalid QR code or stamp type.');
-                    this.showScreen('scanner'); // 不正なQRコードの場合はスキャナー画面に戻す
+                    // 不正なQRコードの場合はスキャナー画面に戻す
+                    this.showScreen('scanner');
                 }
             },
 
@@ -550,57 +593,42 @@
                 }
 
                 // AR表示のメッセージを表示
-                const arMessage = document.createElement('div');
-                arMessage.id = 'ar-message';
+                const arMessage = document.getElementById('ar-message');
+                arMessage.style.display = 'block';
                 arMessage.innerHTML = `
                     <h3>${this.stamps[stampType].name}のARを表示中</h3>
                     <p>デバイスを動かしてARモデルを探してください。</p>
                 `;
-                document.body.appendChild(arMessage);
                 
-                // スタンプの種類に応じて表示する3Dモデルを切り替える
-                let modelUrl = 'https://aframe.io/examples/ar/gears.glb'; // デフォルト
-                switch (stampType) {
-                    case 'entrance':
-                        modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/gears/gears.glb';
-                        break;
-                    case 'stage':
-                        modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/bunny/bunny.glb';
-                        break;
-                    case 'food':
-                        modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/astronaut/scene.gltf';
-                        break;
-                    case 'game':
-                        modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/dog/dog.gltf';
-                        break;
-                    case 'art':
-                        modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/hand/scene.gltf';
-                        break;
-                    case 'special':
-                        modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/fish/fish.gltf';
-                        break;
-                }
+                // A-Frame AR.jsのカメラ映像を常に表示するため、
+                // スキャナー画面を非表示にせず、その上にARシーンを重ねる
+                this.stopScanner(); // QRスキャナーを停止
+                this.showScreen('ar'); // AR画面に切り替え
 
+                // ARシーンに3Dモデルを追加
                 const arElement = document.createElement('a-entity');
                 arElement.setAttribute('id', 'ar-model');
-                arElement.setAttribute('gltf-model', modelUrl);
+                arElement.setAttribute('gltf-model', '#crystal-stone-rock');
                 arElement.setAttribute('position', '0 0 -5');
                 arElement.setAttribute('scale', '0.5 0.5 0.5');
 
-                // A-Frameシーンの子要素としてAR要素を追加
                 arScene.appendChild(arElement);
-
-                this.showScreen('ar');
 
                 // 5秒後にメッセージを非表示にする
                 setTimeout(() => {
-                    if (arMessage) {
-                        arMessage.remove();
-                    }
+                    arMessage.style.display = 'none';
                 }, 5000);
             }
         };
         
+        // A-Frame assets定義
+        // ロードする3Dモデルを事前に定義
+        const aFrameAssets = document.createElement('a-assets');
+        aFrameAssets.innerHTML = `
+            <a-asset-item id="crystal-stone-rock" src="uploaded:crystal_stone_rock.glb"></a-asset-item>
+        `;
+        document.getElementById('ar-scene').appendChild(aFrameAssets);
+
         // ページロード時にアプリケーションを初期化
         window.onload = function() {
             app.init();
