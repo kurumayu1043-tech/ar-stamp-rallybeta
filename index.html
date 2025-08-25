@@ -364,6 +364,11 @@
             display: none;
             backdrop-filter: blur(5px);
             animation: fadeIn 0.5s ease-in-out;
+            max-width: 80%;
+        }
+        
+        #error-box p {
+            margin: 0;
         }
 
         @keyframes fadeIn {
@@ -541,7 +546,7 @@
 
         <!-- Custom error message box -->
         <div id="error-box">
-            <span id="error-message"></span>
+            <p id="error-message"></p>
         </div>
 
         <!-- Custom confirmation modal for reset -->
@@ -601,7 +606,6 @@
             bindEvents() {
                 this.startBtn.addEventListener('click', () => this.showScanner());
                 this.backBtn.addEventListener('click', () => this.showStampSheet());
-                this.continueBtn.addEventListener('click', () => this.showStampSheet());
                 this.scanMoreBtn.addEventListener('click', () => this.showScanner());
                 this.shareBtn.addEventListener('click', () => this.shareResults());
                 this.resetBtn.addEventListener('click', () => this.showConfirmModal('スタンプシートをリセットしますか？', () => {
@@ -619,7 +623,7 @@
                 this.errorBox.style.display = 'block';
                 setTimeout(() => {
                     this.errorBox.style.display = 'none';
-                }, 5000);
+                }, 8000); // Wait longer for the user to read the message
             }
             
             hideError() {
@@ -693,10 +697,11 @@
                     this.log('Scanner started successfully.');
                 } catch (err) {
                     this.log(`Failed to start scanner: ${err.name}: ${err.message}`);
+                    this.stopScanner();
                     if (err.name === 'NotAllowedError') {
                         this.showError('カメラへのアクセスが拒否されました。ブラウザの設定で、このサイトのカメラ利用を許可してください。');
                     } else if (err.name === 'NotFoundError') {
-                        this.showError('カメラが見つかりませんでした。');
+                        this.showError('カメラが見つかりませんでした。端末にカメラがあるか確認してください。');
                     } else {
                         this.showError(`カメラの起動に失敗しました。詳細: ${err.message}`);
                     }
@@ -753,7 +758,7 @@
                             this.log(`Simple stamp string found: ${data}`);
                             this.collectStamp(data);
                         } else {
-                            this.showError('無効なQRコードです。');
+                            this.showError('無効なQRコードです。イベントのQRコードか確認してください。');
                         }
                     }
                 } catch (e) {
@@ -763,7 +768,7 @@
                         this.log(`Simple stamp string found: ${data}`);
                         this.collectStamp(data);
                     } else {
-                        this.showError('無効なQRコードです。');
+                        this.showError('無効なQRコードです。イベントのQRコードか確認してください。');
                     }
                 }
             }
@@ -841,23 +846,28 @@
                     'art': '展示室',
                     'special': '特別ブース'
                 };
-                document.getElementById('stamp-location').textContent = stampLocations[stampType] || '新しいスタンプ';
+                
+                // Remove existing AR message if any
+                if(this.arMessage) {
+                    this.arMessage.remove();
+                }
 
-                this.arMessage.style.display = 'block';
-                this.arScene.style.display = 'block';
+                const arMessageElement = document.createElement('div');
+                arMessageElement.id = 'ar-message';
+                arMessageElement.innerHTML = `🎉 スタンプゲット！ 🎉<br>${stampLocations[stampType]}<br><button id="continue-btn">OK！スタンプシートを見る</button>`;
+                document.getElementById('ar-screen').appendChild(arMessageElement);
 
-                this.mascot.setAttribute('visible', 'true');
-
-                // 自動的にスタンプシートに戻る
-                setTimeout(() => {
+                document.getElementById('continue-btn').addEventListener('click', () => {
                     this.hideAR();
-                }, 5000);
+                }, { once: true }); // Use once: true to prevent multiple event listeners
+
+                this.arScene.style.display = 'block';
+                this.mascot.setAttribute('visible', 'true');
             }
 
             hideAR() {
                 this.log('Hiding AR screen');
                 this.mascot.setAttribute('visible', 'false');
-                this.arMessage.style.display = 'none';
                 this.arScene.style.display = 'none';
                 this.showStampSheet();
             }
