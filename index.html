@@ -86,6 +86,15 @@
             background: #000;
             z-index: 999;
             display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #scanner-loading {
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 20px;
         }
 
         /* html5-qrcode will manage the video and its container */
@@ -449,6 +458,7 @@
         <div id="scanner-screen">
             <!-- Container for the QR reader. html5-qrcode will add video and canvas elements here. -->
             <div id="qr-reader"></div>
+            <div id="scanner-loading" style="display: none;">カメラを起動中...</div>
             <div id="scanner-overlay">
                 <div id="scan-instruction">
                     📱 QRコードを緑の枠内に合わせてください
@@ -646,6 +656,7 @@
                 this.arScreen = document.getElementById('ar-screen');
                 this.stampSheet = document.getElementById('stamp-sheet');
                 this.qrReader = document.getElementById('qr-reader');
+                this.scannerLoading = document.getElementById('scanner-loading');
 
                 this.startBtn = document.getElementById('start-btn');
                 this.backBtn = document.getElementById('back-btn');
@@ -689,7 +700,7 @@
                 this.errorBox.style.display = 'block';
                 setTimeout(() => {
                     this.errorBox.style.display = 'none';
-                }, 3000);
+                }, 5000);
             }
 
             showConfirmModal(message, onConfirm) {
@@ -727,7 +738,7 @@
                         this.startScreen.style.display = 'flex';
                         break;
                     case 'scanner':
-                        this.scannerScreen.style.display = 'block';
+                        this.scannerScreen.style.display = 'flex'; // Use flex for centering
                         break;
                     case 'ar':
                         this.arScreen.style.display = 'block';
@@ -741,58 +752,71 @@
             }
             
             async showScanner() {
-                this.log('Starting QR scanner...');
+                this.log('Attempting to start QR scanner...');
                 this.showScreen('scanner');
+                this.scannerLoading.style.display = 'block'; // Show loading message
 
-                // Stop any existing scanner instance before starting a new one
-                if (this.qrCodeScanner && this.isScanning) {
-                    try {
-                        await this.qrCodeScanner.stop();
-                    } catch (err) {
-                        this.log(`Error stopping previous scanner: ${err}`);
+                // First, check for camera access and explicitly ask for permission
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
+                    this.log("Camera access granted. Proceeding with scanner initialization.");
+
+                    // Stop any existing scanner instance before starting a new one
+                    if (this.qrCodeScanner && this.isScanning) {
+                        try {
+                            await this.qrCodeScanner.stop();
+                        } catch (err) {
+                            this.log(`Error stopping previous scanner: ${err}`);
+                        }
                     }
-                }
+                    this.scannerLoading.style.display = 'none'; // Hide loading message
+                    this.qrReader.style.display = 'flex'; // Show QR reader
 
-                // Create a new scanner instance
-                this.qrCodeScanner = new Html5QrcodeScanner("qr-reader", {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    disableFlip: false
-                }, false); // verbose mode is false
+                    // Create a new scanner instance
+                    this.qrCodeScanner = new Html5QrcodeScanner("qr-reader", {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        disableFlip: false
+                    }, false); // verbose mode is false
 
-                const onScanSuccess = (decodedText, decodedResult) => {
-                    this.log(`QR Code detected: ${decodedText}`);
-                    document.getElementById('qr-reader').classList.add('recognized');
-                    // Stop the scanner immediately after a successful scan
-                    this.qrCodeScanner.stop().then(() => {
-                        this.isScanning = false;
-                        this.handleQRCode(decodedText);
+                    const onScanSuccess = (decodedText, decodedResult) => {
+                        this.log(`QR Code detected: ${decodedText}`);
+                        document.getElementById('qr-reader').classList.add('recognized');
+                        // Stop the scanner immediately after a successful scan
+                        this.qrCodeScanner.stop().then(() => {
+                            this.isScanning = false;
+                            this.handleQRCode(decodedText);
+                        }).catch(err => {
+                            this.log(`Error stopping scanner: ${err}`);
+                            this.handleQRCode(decodedText);
+                        });
+                    };
+
+                    const onScanError = (errorMessage) => {
+                        this.log(`QR Scanner Error: ${errorMessage}`);
+                    };
+
+                    this.qrCodeScanner.render(onScanSuccess, onScanError).then(() => {
+                        this.isScanning = true;
+                        this.log("Scanner started successfully.");
                     }).catch(err => {
-                        this.log(`Error stopping scanner: ${err}`);
-                        this.handleQRCode(decodedText);
+                        this.log(`Failed to render scanner: ${err}`);
+                        this.showError('カメラの起動に失敗しました。');
                     });
-                };
 
-                const onScanError = (errorMessage) => {
-                    // Log errors but don't show to user unless critical
-                    // The library handles most of the internal errors automatically.
-                    this.log(`QR Scanner Error: ${errorMessage}`);
-                };
-
-                // Start scanning
-                this.qrCodeScanner.render(onScanSuccess, onScanError).then(() => {
-                    this.isScanning = true;
-                    this.log("Scanner started successfully.");
-                }).catch(err => {
-                    this.log(`Failed to start scanner: ${err}`);
-                    if (err.message && err.message.includes('permission denied')) {
+                } catch (error) {
+                    this.scannerLoading.style.display = 'none'; // Hide loading message
+                    this.qrReader.style.display = 'none'; // Hide QR reader
+                    this.log(`Camera access error: ${error.name}: ${error.message}`);
+                    if (error.name === 'NotAllowedError') {
                         this.showError('カメラへのアクセスが拒否されました。ブラウザの設定で許可してください。');
-                    } else if (err.message && err.message.includes('NotReadableError')) {
+                    } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
                         this.showError('カメラが使用中です。他のアプリやタブを閉じてください。');
                     } else {
-                        this.showError('カメラの起動に失敗しました。');
+                        this.showError('カメラにアクセスできませんでした。別のデバイスで試すか、ブラウザの設定を確認してください。');
                     }
-                });
+                }
             }
 
             async stopScanner() {
@@ -809,7 +833,6 @@
 
             handleQRCode(data) {
                 this.log(`Handling QR Code data: ${data}`);
-                // Simple URL parameter check for stamp types
                 try {
                     const url = new URL(data);
                     const stampType = url.searchParams.get('stamp');
@@ -817,13 +840,11 @@
                         this.log(`Stamp type found: ${stampType}`);
                         this.collectStamp(stampType);
                     } else {
-                        this.log('No stamp parameter found in URL, checking for simple string...');
                         const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
                         if (stamps.includes(data)) {
                             this.log(`Simple stamp string found: ${data}`);
                             this.collectStamp(data);
                         } else {
-                            this.log('QR code data does not match a valid stamp.');
                             this.showError('無効なQRコードです。');
                         }
                     }
@@ -834,7 +855,6 @@
                         this.log(`Simple stamp string found: ${data}`);
                         this.collectStamp(data);
                     } else {
-                        this.log('QR code data does not match a valid stamp.');
                         this.showError('無効なQRコードです。');
                     }
                 }
@@ -872,7 +892,7 @@
                     this.showAR(stampType);
                 } else {
                     this.log(`Stamp already collected: ${stampType}`);
-                    this.showAR(stampType); // Show AR even if stamp is already collected
+                    this.showAR(stampType);
                 }
             }
 
