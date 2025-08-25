@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <!-- A-FrameライブラリをCDNから読み込み -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <!-- AR.jsライブラリをCDNから読み込み (A-Frameの後に追加) -->
+    <!-- AR.jsライブラリをCDNから読み込み -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         /* Base styles */
@@ -124,6 +124,12 @@
             color: white;
             text-align: center;
             z-index: 8;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         #stamp-screen h2 {
@@ -196,17 +202,8 @@
         }
 
         /* AR表示用 */
-        .ar-scene-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-        }
-        
-        a-scene {
-            position: absolute !important;
+        #ar-scene {
+            position: fixed !important;
             top: 0;
             left: 0;
             width: 100% !important;
@@ -214,13 +211,6 @@
             z-index: 100;
         }
         
-        /* AR.jsのカメラ映像を画面全体に表示 */
-        a-scene video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
         #ar-message {
             position: fixed;
             top: 20%;
@@ -284,23 +274,21 @@
     </div>
     
     <!-- ARシーンをアプリの表示とは別に管理 -->
-    <div id="ar-scene-container" class="ar-scene-container">
-        <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-            <a-assets>
-                <!-- AR.jsのHiroマーカー用パターン -->
-                <a-asset-item id="hiro-marker-pattern" src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt"></a-asset-item>
-                <!-- 検証用の3Dモデル -->
-                <a-asset-item id="rocket-model" src="https://cdn.aframe.io/examples/ar/glyph/models/rocket/rocket.gltf"></a-asset-item>
-            </a-assets>
+    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: false;" style="display: none;">
+        <a-assets>
+            <!-- AR.jsのHiroマーカー用パターン -->
+            <a-asset-item id="hiro-marker-pattern" src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt"></a-asset-item>
+            <!-- 検証用の3Dモデル -->
+            <a-asset-item id="rocket-model" src="https://cdn.aframe.io/examples/ar/glyph/models/rocket/rocket.gltf"></a-asset-item>
+        </a-assets>
 
-            <!-- Hiroマーカーに連動するモデル -->
-            <a-marker type="pattern" url="#hiro-marker-pattern">
-                <a-entity gltf-model="#rocket-model" position="0 0 0" scale="0.2 0.2 0.2" rotation="0 0 0"></a-entity>
-            </a-marker>
+        <!-- Hiroマーカーに連動するモデル -->
+        <a-marker type="pattern" url="#hiro-marker-pattern">
+            <a-entity gltf-model="#rocket-model" position="0 0 0" scale="0.2 0.2 0.2" rotation="0 0 0"></a-entity>
+        </a-marker>
 
-            <a-camera></a-camera>
-        </a-scene>
-    </div>
+        <a-camera></a-camera>
+    </a-scene>
     
     <!-- AR表示中に表示するメッセージ -->
     <div id="ar-message" style="display:none;"></div>
@@ -402,20 +390,23 @@
                 const startScreen = document.getElementById('start-screen');
                 const scannerScreen = document.getElementById('scanner-screen');
                 const stampScreen = document.getElementById('stamp-screen');
-                const arSceneContainer = document.getElementById('ar-scene-container');
+                const arScene = document.getElementById('ar-scene');
                 const backButton = document.getElementById('back-button');
                 const arBackButton = document.getElementById('ar-back-button');
                 
+                // 全ての画面を非表示に
                 startScreen.style.display = 'none';
                 scannerScreen.style.display = 'none';
                 stampScreen.style.display = 'none';
-                arSceneContainer.style.display = 'none';
+                arScene.style.display = 'none';
                 backButton.style.display = 'none';
                 arBackButton.style.display = 'none';
 
                 if (screenId === 'start') {
                     startScreen.style.display = 'flex';
                     this.stopScanner();
+                    this.stopAR();
+                    log('Switched to start screen');
                 } else if (screenId === 'scanner') {
                     scannerScreen.style.display = 'flex';
                     backButton.style.display = 'block';
@@ -430,7 +421,7 @@
                     this.stopAR();
                     log('Switched to stamps screen');
                 } else if (screenId === 'ar') {
-                    arSceneContainer.style.display = 'block';
+                    arScene.style.display = 'block';
                     arBackButton.style.display = 'block';
                     this.stopScanner();
                     this.startAR();
@@ -520,11 +511,10 @@
              * ARシーンを停止
              */
             stopAR() {
-                const arScene = document.querySelector('a-scene');
+                const arScene = document.getElementById('ar-scene');
                 if (arScene) {
                     // AR.jsのカメラを停止
                     arScene.pause();
-                    arScene.flushToDOM(true);
                 }
                 log('AR scene stopped.');
             },
@@ -533,7 +523,7 @@
              * ARシーンを開始
              */
             startAR() {
-                const arScene = document.querySelector('a-scene');
+                const arScene = document.getElementById('ar-scene');
                 if (arScene) {
                     arScene.play();
                 }
@@ -609,7 +599,7 @@
              * @param {string} stampType - 表示するスタンプのタイプ
              */
             showAR(stampType) {
-                const arScene = document.querySelector('a-scene');
+                const arScene = document.getElementById('ar-scene');
                 if (!arScene) {
                     log('AR scene element not found.');
                     return;
