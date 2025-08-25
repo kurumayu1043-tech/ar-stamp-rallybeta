@@ -690,31 +690,75 @@
                 if (this.currentScreen !== 'scanner') return;
                 
                 this.isScanning = true;
+                this.log('QR scanning started');
                 
                 const scan = () => {
                     if (!this.isScanning || this.currentScreen !== 'scanner') return;
                     
                     if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
-                        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-                        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                        // キャンバスサイズをビデオに合わせて調整
+                        this.canvas.width = this.video.videoWidth;
+                        this.canvas.height = this.video.videoHeight;
                         
+                        // ビデオフレームをキャンバスに描画
+                        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                        
+                        // 画像データを取得してQRコード検出を試行
                         try {
-                            const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+                            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
                             
-                            if (qrCode) {
+                            // jsQRでQRコード検出
+                            const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+                                inversionAttempts: "dontInvert"
+                            });
+                            
+                            if (qrCode && qrCode.data) {
                                 this.log(`QR Code detected: ${qrCode.data}`);
+                                
+                                // 視覚的フィードバック
+                                this.showDetectionFeedback(true);
+                                
+                                // QRコード処理
                                 this.handleQRCode(qrCode.data);
-                                return;
+                                return; // スキャン停止
                             }
+                            
                         } catch (error) {
-                            // QR読取りエラーは無視
+                            this.log(`QR scan error: ${error.message}`);
                         }
                     }
                     
+                    // 次フレームで再試行
                     requestAnimationFrame(scan);
                 };
                 
-                scan();
+                // スキャン開始
+                requestAnimationFrame(scan);
+            }
+            
+            showDetectionFeedback(success) {
+                const scanArea = document.getElementById('scan-area');
+                const instruction = document.getElementById('scan-instruction');
+                
+                if (success) {
+                    scanArea.style.borderColor = '#00ff00';
+                    scanArea.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.3), 0 0 30px #00ff00';
+                    instruction.innerHTML = '✅ QRコードを検出しました！';
+                    instruction.style.background = 'rgba(0,255,0,0.8)';
+                } else {
+                    scanArea.style.borderColor = '#ff0000';
+                    scanArea.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.5), 0 0 20px #ff0000';
+                    instruction.innerHTML = '❌ 対象外のQRコードです';
+                    instruction.style.background = 'rgba(255,0,0,0.8)';
+                    
+                    // 2秒後に元に戻す
+                    setTimeout(() => {
+                        scanArea.style.borderColor = '#00ff00';
+                        scanArea.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,255,0,0.2)';
+                        instruction.innerHTML = '📱 QRコードを緑の枠内に合わせてください';
+                        instruction.style.background = 'rgba(0,0,0,0.8)';
+                    }, 2000);
+                }
             }
             
             stopQRScanning() {
@@ -729,25 +773,66 @@
             handleQRCode(qrData) {
                 this.log(`Processing QR code: ${qrData}`);
                 
-                // サイトのQRコードかチェック
-                if (qrData.includes('kurumayu1043-tech.github.io/ar-stamp-rallybeta')) {
+                // デバッグ用：どんなQRコードでも一度は反応させる
+                if (this.debugMode) {
+                    this.log(`Debug mode: Any QR code accepted - ${qrData}`);
+                    this.stopQRScanning();
+                    const stampType = this.getRandomUnCollectedStamp();
+                    this.collectStamp(stampType);
+                    this.showAR(stampType);
+                    return;
+                }
+                
+                // サイトのQRコードかチェック（より柔軟な判定）
+                const targetDomain = 'kurumayu1043-tech.github.io';
+                const targetPath = 'ar-stamp-rallybeta';
+                
+                if (qrData.includes(targetDomain) && qrData.includes(targetPath)) {
+                    this.log('Target QR code recognized!');
                     this.stopQRScanning();
                     
-                    // スタンプの種類を判定（簡単な例）
+                    // スタンプの種類を判定
                     const stampType = this.determineStampType(qrData);
                     this.collectStamp(stampType);
                     this.showAR(stampType);
-                } else {
-                    // 対象外のQRコード
-                    this.log('Non-target QR code detected');
                     
-                    // 簡単な視覚フィードバック
-                    const scanArea = document.getElementById('scan-area');
-                    scanArea.style.borderColor = '#ff0000';
-                    setTimeout(() => {
-                        if (scanArea) scanArea.style.borderColor = '#00ff00';
-                    }, 500);
+                } else if (qrData.startsWith('http') || qrData.includes('://')) {
+                    // URLだが対象外
+                    this.log(`Non-target URL QR code: ${qrData}`);
+                    this.showDetectionFeedback(false);
+                    
+                } else {
+                    // テキストQRコード - テスト用に許可
+                    this.log(`Text QR code detected: ${qrData}`);
+                    
+                    // 特定のテキストパターンをチェック
+                    const testPatterns = ['test', 'stamp', 'festival', '文化祭', 'スタンプ'];
+                    const isTestQR = testPatterns.some(pattern => 
+                        qrData.toLowerCase().includes(pattern.toLowerCase())
+                    );
+                    
+                    if (isTestQR) {
+                        this.log('Test QR code accepted');
+                        this.stopQRScanning();
+                        const stampType = this.getRandomUnCollectedStamp();
+                        this.collectStamp(stampType);
+                        this.showAR(stampType);
+                    } else {
+                        this.showDetectionFeedback(false);
+                    }
                 }
+            }
+            
+            getRandomUnCollectedStamp() {
+                const validStamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
+                const unCollected = validStamps.filter(stamp => !this.stamps[stamp].collected);
+                
+                if (unCollected.length > 0) {
+                    return unCollected[Math.floor(Math.random() * unCollected.length)];
+                }
+                
+                // 全て収集済みの場合はランダム
+                return validStamps[Math.floor(Math.random() * validStamps.length)];
             }
             
             determineStampType(qrData) {
@@ -988,8 +1073,31 @@
         window.addEventListener('load', () => {
             console.log('🎪 AR Stamp Rally - Festival Edition');
             console.log('Target QR Code: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/');
+            console.log('📱 Test Instructions:');
+            console.log('  • Ctrl+D: Toggle debug mode (accepts any QR)');
+            console.log('  • Space: Test QR detection (when scanning)');
+            console.log('  • Triple tap: Mobile test QR detection');
+            console.log('  • 1-6 keys: Add test stamps (debug mode)');
             
             app = new ARStampRally();
+            
+            // QRコード生成の提案をコンソールに表示
+            console.log('\n🎯 QR Code Setup Instructions:');
+            console.log('Create QR codes with these URLs:');
+            console.log('  正門: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=entrance');
+            console.log('  ステージ: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=stage');
+            console.log('  食堂: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=food');
+            console.log('  ゲーム: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=game');
+            console.log('  展示: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=art');
+            console.log('  特別: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=special');
+            
+            // jsQRライブラリの確認
+            if (typeof jsQR !== 'undefined') {
+                console.log('✅ jsQR library loaded successfully');
+            } else {
+                console.error('❌ jsQR library not loaded');
+                alert('QRコード読み取りライブラリの読み込みに失敗しました。ページを再読み込みしてください。');
+            }
         });
         
         // ページ離脱時のクリーンアップ
@@ -1007,6 +1115,11 @@
                     app.debugMode = !app.debugMode;
                     document.getElementById('debug-info').style.display = app.debugMode ? 'block' : 'none';
                     app.log(`Debug mode: ${app.debugMode ? 'ON' : 'OFF'}`);
+                    
+                    // デバッグモード時の説明表示
+                    if (app.debugMode) {
+                        alert('🐛 デバッグモード有効\n• どんなQRコードでも認識します\n• 1-6キーでテストスタンプ追加\n• Ctrl+Dで再度切り替え');
+                    }
                 }
             }
             
@@ -1017,6 +1130,37 @@
                 app.collectStamp(stampType);
                 app.showAR(stampType);
                 app.log(`Debug: Added stamp ${stampType}`);
+            }
+            
+            // テスト用：QRスキャンテスト（スペースキー）
+            if (app && e.key === ' ' && app.currentScreen === 'scanner') {
+                e.preventDefault();
+                app.log('Space key test - simulating QR detection');
+                app.handleQRCode('https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=test');
+            }
+        });
+        
+        // タッチ操作でのテスト（モバイル用）
+        let touchCount = 0;
+        let touchTimer = null;
+        
+        document.addEventListener('touchstart', (e) => {
+            if (app && app.currentScreen === 'scanner') {
+                touchCount++;
+                
+                if (touchTimer) clearTimeout(touchTimer);
+                
+                // 3回連続タップでテストQRコード認識
+                if (touchCount >= 3) {
+                    app.log('Triple tap detected - simulating QR detection');
+                    app.handleQRCode('test-stamp-festival');
+                    touchCount = 0;
+                    return;
+                }
+                
+                touchTimer = setTimeout(() => {
+                    touchCount = 0;
+                }, 1000);
             }
         });
     </script>
