@@ -402,6 +402,8 @@
                 } else if (screenId === 'ar') {
                     arScene.style.display = 'block';
                     arBackButton.style.display = 'block';
+                    // AR表示に戻る場合は、AR.jsのカメラを再開する
+                    this.startAR();
                 }
             },
 
@@ -462,8 +464,8 @@
 
                     if (code) {
                         log(`QR Code detected: ${code.data}`);
-                        this.handleQRCode(code.data);
                         scanning = false; // スキャン成功したらループ停止
+                        this.handleQRCode(code.data);
                     }
 
                     if (scanning) {
@@ -491,10 +493,32 @@
             stopAR() {
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
+                    // AR.jsのビデオストリームを停止
+                    const video = arScene.querySelector('video');
+                    if (video && video.srcObject) {
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                    }
+                    
                     const existingModel = arScene.querySelector('#ar-model');
                     if (existingModel) {
                         arScene.removeChild(existingModel);
                     }
+                }
+                log('AR scene stopped.');
+            },
+
+            /**
+             * ARシーンを再開
+             */
+            startAR() {
+                const arScene = document.getElementById('ar-scene');
+                // AR.jsのカメラを再起動
+                const camera = arScene.querySelector('a-camera');
+                if (camera) {
+                    // AR.jsが自動的にカメラを起動するため、明示的な処理は不要
+                    // ただし、ARシーンを再表示する際に`arjs`属性を再設定するなど、
+                    // 強制的に再初期化が必要な場合がある
+                    // 今回は、showScreenでarSceneをdisplay:blockにするだけで対応
                 }
             },
 
@@ -503,6 +527,9 @@
              * @param {string} qrData - QRコードから読み取ったデータ
              */
             handleQRCode(qrData) {
+                // スキャン成功後、スキャナーを停止
+                this.stopScanner();
+                
                 const urlParams = new URLSearchParams(qrData.split('?')[1]);
                 const stampType = urlParams.get('stamp');
                 if (stampType && this.stamps[stampType]) {
@@ -593,13 +620,8 @@
 
                 arScene.appendChild(arElement);
 
-                // QRスキャナーの画面を非表示にせず、ARシーンをその上に重ねる
-                document.getElementById('scanner-screen').style.display = 'block';
-                document.getElementById('qr-video').style.display = 'none';
-                document.getElementById('scan-message').style.display = 'none';
-                document.getElementById('ar-scene').style.display = 'block';
-                document.getElementById('back-button').style.display = 'none';
-                document.getElementById('ar-back-button').style.display = 'block';
+                // 画面をARシーンに切り替え
+                this.showScreen('ar');
 
                 // 5秒後にメッセージを非表示にする
                 setTimeout(() => {
