@@ -1,691 +1,1024 @@
 <!DOCTYPE html>
-<HTML lung="JA">
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
-    <title>AR Stamp Rally - Enhanced</title>
+    <title>文化祭 ARスタンプラリー</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
     <style>
-        body {
+        * {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #000;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             overflow: hidden;
+            height: 100vh;
         }
         
-        #arjs-video {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-            z-index: -1 !important;
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100vh;
         }
         
-        .a-canvas {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            z-index: 1 !important;
-        }
-        
-        #ui-overlay {
+        /* スタート画面 */
+        #start-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 999;
-            pointer-events: none;
-        }
-        
-        #loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            pointer-events: all;
+            text-align: center;
+            padding: 20px;
         }
         
-        #startButton {
-            background: #4CAF50;
+        #start-screen h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        #start-screen .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        #start-btn {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
             border: none;
             color: white;
             padding: 20px 40px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 18px;
-            margin: 20px 2px;
+            font-size: 1.2rem;
+            border-radius: 50px;
             cursor: pointer;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            touch-action: manipulation;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
         }
         
-        #info {
+        #start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+        }
+        
+        /* QRスキャナー画面 */
+        #scanner-screen {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 14px;
-            text-align: center;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 999;
+            display: none;
+        }
+        
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            border: 2px solid #4CAF50;
         }
         
-        #stats {
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #00FF00;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            font-family: monospace;
-            pointer-events: none;
-            min-width: 200px;
-            border: 1px solid #00FF00;
-        }
-        
-        #debug {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #FFD700;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            font-family: monospace;
-            pointer-events: none;
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #FFD700;
-        }
-        
-        #marker-guide {
-            position: fixed;
+        #scan-area {
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 250px;
             height: 250px;
+            border: 3px solid #00ff00;
+            border-radius: 20px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            animation: scan-pulse 2s infinite;
+        }
+        
+        @keyframes scan-pulse {
+            0%, 100% { border-color: #00ff00; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,255,0,0.2); }
+            50% { border-color: #00ffff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,255,255,0.3); }
+        }
+        
+        #scan-instruction {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 16px;
+            backdrop-filter: blur(10px);
+        }
+        
+        #back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,0,0,0.8);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            pointer-events: all;
+        }
+        
+        /* AR表示画面 */
+        #ar-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 998;
+            display: none;
+        }
+        
+        #ar-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #ar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            z-index: 100;
         }
         
-        .corner {
+        #ar-message {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            border: 3px solid #4CAF50;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,255,0,0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            animation: stamp-celebration 3s ease-in-out;
+            pointer-events: all;
         }
         
-        .corner-tl {
+        @keyframes stamp-celebration {
+            0% { transform: translateY(100px) scale(0.5); opacity: 0; }
+            20% { transform: translateY(0) scale(1.1); opacity: 1; }
+            80% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        
+        #continue-btn {
+            background: #4ECDC4;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+            pointer-events: all;
+        }
+        
+        /* スタンプシート画面 */
+        #stamp-sheet {
+            position: fixed;
             top: 0;
             left: 0;
-            border-right: none;
-            border-bottom: none;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            z-index: 997;
+            display: none;
+            overflow-y: auto;
+            padding: 20px;
         }
         
-        .corner-tr {
-            top: 0;
-            right: 0;
-            border-left: none;
-            border-bottom: none;
+        .stamp-sheet-header {
+            text-align: center;
+            margin-bottom: 30px;
         }
         
-        .corner-bl {
-            bottom: 0;
-            left: 0;
-            border-right: none;
-            border-top: none;
+        .stamp-sheet-header h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
         }
         
-        .corner-br {
-            bottom: 0;
-            right: 0;
-            border-left: none;
-            border-top: none;
+        .stamp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto 30px;
         }
         
-        #marker-guide.detected {
-            animation: pulse 0.5s;
+        .stamp-slot {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.1);
+            border: 3px dashed rgba(255,255,255,0.3);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
         
-        #marker-guide.detected .corner {
-            border-color: #00FF00;
-            box-shadow: 0 0 10px #00FF00;
+        .stamp-slot.collected {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: 3px solid #FFD700;
+            color: #333;
+            animation: stamp-glow 2s infinite alternate;
         }
         
-        @keyframes pulse {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
-            100% { transform: translate(-50%, -50%) scale(1); }
+        @keyframes stamp-glow {
+            0% { box-shadow: 0 0 10px rgba(255,215,0,0.5); }
+            100% { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
         }
         
-        #guide-text {
-            position: absolute;
-            top: -35px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #4CAF50;
+        .stamp-slot .stamp-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .stamp-slot .stamp-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stamp-slot .stamp-time {
             font-size: 12px;
-            background: rgba(0,0,0,0.9);
-            padding: 5px 10px;
+            opacity: 0.8;
+        }
+        
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            height: 20px;
+            margin: 20px auto;
+            max-width: 300px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .action-buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .action-buttons button {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-buttons button:hover {
+            background: white;
+            color: #667eea;
+        }
+        
+        /* デバッグ情報 */
+        #debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #00ff00;
+            padding: 10px;
             border-radius: 5px;
-            white-space: nowrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 9999;
+            display: none;
         }
         
         .hidden {
             display: none !important;
         }
         
-        #confidence-bar {
-            position: fixed;
-            bottom: 180px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 20px;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid #444;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        #confidence-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #FF0000, #FFD700, #00FF00);
-            transition: width 0.3s ease;
-        }
-        
-        #confidence-label {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 10px;
-            font-weight: bold;
+        /* レスポンシブ対応 */
+        @media (max-width: 480px) {
+            #start-screen h1 {
+                font-size: 2rem;
+            }
+            
+            #scan-area {
+                width: 200px;
+                height: 200px;
+            }
+            
+            .stamp-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="ui-overlay">
-        <div id="loading">
-            <h1>🎯 AR スタンプラリー</h1>
-            <p id="status">タップして開始</p>
-            <button id="startButton">📷 カメラを開始</button>
-            <div style="margin-top: 20px; font-size: 14px; opacity: 0.8; max-width: 300px;">
-                <p style="color: #FFD700;">📌 重要な準備：</p>
-                <ul style="text-align: left; color: #CCC;">
-                    <li>HIROマーカーを印刷または画面表示</li>
-                    <li>明るい場所で使用</li>
-                    <li>マーカーを平らに置く</li>
-                    <li>カメラから20-40cmの距離</li>
-                </ul>
-                <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" 
-                   target="_blank" 
-                   style="color: #4CAF50; text-decoration: none; display: inline-block; margin-top: 10px; padding: 8px 16px; border: 1px solid #4CAF50; border-radius: 5px;">
-                    📥 HIROマーカーをダウンロード
-                </a>
+    <div id="app">
+        <!-- スタート画面 -->
+        <div id="start-screen">
+            <h1>🎪 文化祭スタンプラリー</h1>
+            <p class="subtitle">QRコードを読み込んでARマスコットに会おう！</p>
+            <button id="start-btn">📱 スタンプラリーを始める</button>
+            <div style="max-width: 300px; text-align: left; opacity: 0.8; font-size: 14px;">
+                <p style="margin-bottom: 10px;">🎯 遊び方：</p>
+                <p>1️⃣ 各ブースのQRコードをスキャン</p>
+                <p>2️⃣ ARマスコットが登場</p>
+                <p>3️⃣ デジタルスタンプをゲット</p>
+                <p>4️⃣ 全て集めてコンプリート！</p>
             </div>
         </div>
-        
-        <div id="info" class="hidden">
-            <div id="info-text">ARカメラ起動中...</div>
-        </div>
-        
-        <div id="stats" class="hidden">
-            <div style="color: white; font-weight: bold; margin-bottom: 5px;">📊 認識状態</div>
-            <div id="stats-content">
-                FPS: <span id="fps">0</span><br>
-                検出強度: <span id="detection">0</span>%<br>
-                マーカー状態: <span id="marker-status">探索中</span><br>
-                カメラ: <span id="camera-status">準備中</span>
+
+        <!-- QRスキャナー画面 -->
+        <div id="scanner-screen">
+            <video id="video" playsinline></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            
+            <div id="scanner-overlay">
+                <div id="scan-instruction">
+                    📱 QRコードを緑の枠内に合わせてください
+                </div>
+                <button id="back-btn">← 戻る</button>
+                <div id="scan-area"></div>
             </div>
         </div>
-        
-        <div id="marker-guide" class="hidden">
-            <div id="guide-text">HIROマーカーをここに合わせる</div>
-            <div class="corner corner-tl"></div>
-            <div class="corner corner-tr"></div>
-            <div class="corner corner-bl"></div>
-            <div class="corner corner-br"></div>
+
+        <!-- AR表示画面 -->
+        <div id="ar-screen">
+            <canvas id="ar-canvas"></canvas>
+            <div id="ar-overlay">
+                <div id="ar-message" style="display: none;">
+                    <div id="stamp-celebration">
+                        🎉 スタンプゲット！ 🎉
+                        <br><span id="stamp-location">文化祭会場</span>
+                        <br><button id="continue-btn">スタンプシートを見る</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div id="confidence-bar" class="hidden">
-            <div id="confidence-fill"></div>
-            <div id="confidence-label">認識強度: 0%</div>
+
+        <!-- スタンプシート画面 -->
+        <div id="stamp-sheet">
+            <div class="stamp-sheet-header">
+                <h2>🎪 スタンプシート</h2>
+                <p>集めたスタンプ: <span id="stamp-count">0</span>/6</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%;">
+                        0%
+                    </div>
+                </div>
+            </div>
+
+            <div class="stamp-grid">
+                <div class="stamp-slot" data-stamp="entrance">
+                    <div class="stamp-icon">🎪</div>
+                    <div class="stamp-name">正門</div>
+                    <div class="stamp-time" id="time-entrance">未取得</div>
+                </div>
+                <div class="stamp-slot" data-stamp="stage">
+                    <div class="stamp-icon">🎭</div>
+                    <div class="stamp-name">ステージ</div>
+                    <div class="stamp-time" id="time-stage">未取得</div>
+                </div>
+                <div class="stamp-slot" data-stamp="food">
+                    <div class="stamp-icon">🍗</div>
+                    <div class="stamp-name">食堂</div>
+                    <div class="stamp-time" id="time-food">未取得</div>
+                </div>
+                <div class="stamp-slot" data-stamp="game">
+                    <div class="stamp-icon">🎮</div>
+                    <div class="stamp-name">ゲームコーナー</div>
+                    <div class="stamp-time" id="time-game">未取得</div>
+                </div>
+                <div class="stamp-slot" data-stamp="art">
+                    <div class="stamp-icon">🎨</div>
+                    <div class="stamp-name">展示室</div>
+                    <div class="stamp-time" id="time-art">未取得</div>
+                </div>
+                <div class="stamp-slot" data-stamp="special">
+                    <div class="stamp-icon">⭐</div>
+                    <div class="stamp-name">特別ブース</div>
+                    <div class="stamp-time" id="time-special">未取得</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="scan-more-btn">📱 QRコードをスキャン</button>
+                <button id="share-btn">📤 結果をシェア</button>
+                <button id="reset-btn">🔄 リセット</button>
+            </div>
         </div>
-        
-        <div id="debug" class="hidden">
-            <div id="debug-text">Debug info</div>
+
+        <!-- デバッグ情報 -->
+        <div id="debug-info">
+            <div id="debug-text">Debug Info</div>
         </div>
     </div>
 
-    <!-- 最適化されたAR Scene -->
-    <a-scene
-        id="arScene"
-        embedded
-        arjs="sourceType: webcam; 
-              debugUIEnabled: false; 
-              detectionMode: mono; 
-              matrixCodeType: 3x3;
-              trackingMethod: best;
-              patternRatio: 0.5;
-              labelingMode: black_region;
-              processingMode: best;
-              maxDetectionRate: 60;
-              canvasWidth: 640;
-              canvasHeight: 480;
-              imageSmoothingEnabled: true;"
+    <!-- A-Frame Scene (非表示) -->
+    <a-scene 
+        id="ar-scene"
+        embedded 
+        style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+        background="transparent: true"
         vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false"
-        loading-screen="enabled: false"
-        renderer="logarithmicDepthBuffer: true; 
-                  precision: high; 
-                  antialias: true; 
-                  alpha: true;
-                  colorManagement: true;"
-        stats>
+        device-orientation-permission-ui="enabled: false">
         
-        <!-- カスタムカメラ設定 -->
-        <a-camera-static/>
-        
-        <!-- 最適化されたHIROマーカー -->
-        <a-marker
-            preset="hiro"
-            id="hiro-marker"
-            smooth="true"
-            smoothCount="10"
-            smoothTolerance="0.01"
-            smoothThreshold="5"
-            size="1"
-            type="pattern"
-            url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.hiro">
-            
-            <!-- メインのスタンプオブジェクト -->
-            <a-entity id="stamp-container" position="0 0 0">
+        <!-- マスコットキャラクター -->
+        <a-entity id="mascot" visible="false">
+            <!-- メインボディ -->
+            <a-sphere 
+                position="0 1 -3" 
+                radius="0.8" 
+                color="#FFD700"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 4000">
                 
-                <!-- ベースプラットフォーム -->
-                <a-cylinder
-                    position="0 0 0"
-                    radius="1"
-                    height="0.1"
-                    color="#2C3E50"
-                    shadow="receive: true">
-                </a-cylinder>
+                <!-- 目 -->
+                <a-sphere 
+                    position="-0.3 0.3 0.7" 
+                    radius="0.15" 
+                    color="#000">
+                </a-sphere>
+                <a-sphere 
+                    position="0.3 0.3 0.7" 
+                    radius="0.15" 
+                    color="#000">
+                </a-sphere>
                 
-                <!-- メインスタンプ -->
-                <a-box
-                    id="main-stamp"
-                    position="0 0.5 0"
-                    scale="0.6 0.6 0.6"
-                    material="color: #FFD700; metalness: 0.3; roughness: 0.4"
-                    animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: easeInOutQuad"
-                    shadow>
-                </a-box>
-                
-                <!-- 装飾リング1 -->
-                <a-torus
-                    position="0 0.5 0"
-                    color="#FF6B6B"
-                    radius="0.7"
+                <!-- 口 -->
+                <a-torus 
+                    position="0 -0.2 0.7" 
+                    color="#FF4444" 
+                    radius="0.2" 
                     radius-tubular="0.05"
-                    animation="property: rotation; to: 360 0 0; loop: true; dur: 2000">
+                    rotation="0 0 0">
                 </a-torus>
-                
-                <!-- 装飾リング2 -->
-                <a-torus
-                    position="0 0.5 0"
-                    color="#4ECDC4"
-                    radius="0.9"
-                    radius-tubular="0.03"
-                    animation="property: rotation; to: 0 360 360; loop: true; dur: 3000">
-                </a-torus>
-                
-                <!-- スタンプテキスト -->
-                <a-text
-                    value="STAMP GET!"
-                    position="0 1.3 0"
-                    align="center"
-                    color="#FFFFFF"
-                    font="kelsonsans"
-                    width="4"
-                    animation="property: scale; from: 1 1 1; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000">
-                </a-text>
-                
-                <!-- パーティクル効果 -->
-                <a-entity
-                    position="0 0.5 0"
-                    particle-system="preset: star; 
-                                   particleCount: 100; 
-                                   color: #FFD700,#FF6B6B; 
-                                   size: 0.5; 
-                                   duration: 0.1;
-                                   accelerationValue: 0,-5,0;
-                                   velocityValue: 0,3,0">
-                </a-entity>
-                
-            </a-entity>
+            </a-sphere>
             
-        </a-marker>
+            <!-- 手 -->
+            <a-sphere 
+                position="-1.2 1 -3" 
+                radius="0.3" 
+                color="#FFD700"
+                animation="property: position; to: -1.5 1.3 -3; dir: alternate; loop: true; dur: 1500">
+            </a-sphere>
+            <a-sphere 
+                position="1.2 1 -3" 
+                radius="0.3" 
+                color="#FFD700"
+                animation="property: position; to: 1.5 1.3 -3; dir: alternate; loop: true; dur: 1500">
+            </a-sphere>
+            
+            <!-- お祝いパーティクル -->
+            <a-sphere 
+                position="0 2.5 -3" 
+                radius="0.1" 
+                color="#FF69B4"
+                animation="property: position; to: 0 3.5 -3; dir: alternate; loop: true; dur: 1000">
+            </a-sphere>
+            <a-sphere 
+                position="-1 2.2 -3" 
+                radius="0.08" 
+                color="#00FFFF"
+                animation="property: position; to: -1.5 3 -3; dir: alternate; loop: true; dur: 1200">
+            </a-sphere>
+            <a-sphere 
+                position="1 2.2 -3" 
+                radius="0.08" 
+                color="#00FF00"
+                animation="property: position; to: 1.5 3 -3; dir: alternate; loop: true; dur: 800">
+            </a-sphere>
+            
+            <!-- 祝福テキスト -->
+            <a-text 
+                value="🎉 おめでとう！ 🎉"
+                position="0 2.8 -3"
+                align="center"
+                color="#FF0000"
+                scale="3 3 3"
+                animation="property: scale; to: 3.5 3.5 3.5; dir: alternate; loop: true; dur: 1000">
+            </a-text>
+        </a-entity>
         
-        <a-entity camera></a-entity>
-        
+        <a-camera look-controls-enabled="false" wasd-controls-enabled="false"></a-camera>
     </a-scene>
 
     <script>
-        // グローバル変数
-        const startButton = document.getElementById('startButton');
-        const loading = document.getElementById('loading');
-        const info = document.getElementById('info');
-        const status = document.getElementById('status');
-        const infoText = document.getElementById('info-text');
-        const debug = document.getElementById('debug');
-        const debugText = document.getElementById('debug-text');
-        const stats = document.getElementById('stats');
-        const markerGuide = document.getElementById('marker-guide');
-        const confidenceBar = document.getElementById('confidence-bar');
-        const confidenceFill = document.getElementById('confidence-fill');
-        const confidenceLabel = document.getElementById('confidence-label');
-        
-        let debugLog = [];
-        let markerDetected = false;
-        let detectionConfidence = 0;
-        let frameCount = 0;
-        let lastTime = performance.now();
-        let fps = 0;
-        
-        // デバイス検出
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isAndroid = /Android/.test(navigator.userAgent);
-        const isMobile = isIOS || isAndroid;
-        
-        // デバッグログ関数
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
-            const logEntry = `${timestamp} ${icon} ${message}`;
-            
-            console.log(logEntry);
-            debugLog.push(logEntry);
-            if (debugLog.length > 8) debugLog.shift();
-            
-            debugText.innerHTML = debugLog.join('<br>');
-            debug.classList.remove('hidden');
-        }
-        
-        // FPS計算
-        function updateFPS() {
-            frameCount++;
-            const currentTime = performance.now();
-            if (currentTime >= lastTime + 1000) {
-                fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
-                document.getElementById('fps').textContent = fps;
-                frameCount = 0;
-                lastTime = currentTime;
+        class ARStampRally {
+            constructor() {
+                this.currentScreen = 'start';
+                this.stamps = this.loadStamps();
+                this.isScanning = false;
+                this.stream = null;
+                
+                this.initElements();
+                this.bindEvents();
+                this.updateStampSheet();
+                
+                // デバッグモード
+                this.debugMode = false;
+                if (this.debugMode) {
+                    document.getElementById('debug-info').style.display = 'block';
+                }
+                
+                this.log('AR Stamp Rally initialized');
             }
-            requestAnimationFrame(updateFPS);
-        }
-        
-        // 認識強度の更新
-        function updateConfidence(value) {
-            detectionConfidence = Math.min(100, Math.max(0, value));
-            confidenceFill.style.width = detectionConfidence + '%';
-            confidenceLabel.textContent = `認識強度: ${Math.round(detectionConfidence)}%`;
-            document.getElementById('detection').textContent = Math.round(detectionConfidence);
-        }
-        
-        // カメラ開始処理
-        startButton.addEventListener('click', async function() {
-            log('カメラ起動開始');
-            status.textContent = "カメラにアクセス中...";
             
-            try {
-                // カメラストリームを取得
-                const constraints = {
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1280, max: 1920 },
-                        height: { ideal: 720, max: 1080 },
-                        frameRate: { ideal: 30, max: 60 }
+            initElements() {
+                // 画面要素
+                this.startScreen = document.getElementById('start-screen');
+                this.scannerScreen = document.getElementById('scanner-screen');
+                this.arScreen = document.getElementById('ar-screen');
+                this.stampSheet = document.getElementById('stamp-sheet');
+                
+                // ボタン要素
+                this.startBtn = document.getElementById('start-btn');
+                this.backBtn = document.getElementById('back-btn');
+                this.continueBtn = document.getElementById('continue-btn');
+                this.scanMoreBtn = document.getElementById('scan-more-btn');
+                this.shareBtn = document.getElementById('share-btn');
+                this.resetBtn = document.getElementById('reset-btn');
+                
+                // QRスキャナー要素
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // AR要素
+                this.arScene = document.getElementById('ar-scene');
+                this.mascot = document.getElementById('mascot');
+                this.arMessage = document.getElementById('ar-message');
+                
+                // UI要素
+                this.stampCount = document.getElementById('stamp-count');
+                this.progressFill = document.getElementById('progress-fill');
+            }
+            
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.showScanner());
+                this.backBtn.addEventListener('click', () => this.showStampSheet());
+                this.continueBtn.addEventListener('click', () => this.showStampSheet());
+                this.scanMoreBtn.addEventListener('click', () => this.showScanner());
+                this.shareBtn.addEventListener('click', () => this.shareResults());
+                this.resetBtn.addEventListener('click', () => this.resetStamps());
+            }
+            
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `${timestamp}: ${message}`;
+                console.log(logMessage);
+                
+                if (this.debugMode) {
+                    const debugElement = document.getElementById('debug-text');
+                    debugElement.innerHTML = logMessage + '<br>' + debugElement.innerHTML;
+                }
+            }
+            
+            showScreen(screenName) {
+                // 全画面を非表示
+                [this.startScreen, this.scannerScreen, this.arScreen, this.stampSheet]
+                    .forEach(screen => screen.style.display = 'none');
+                
+                // 指定画面を表示
+                switch(screenName) {
+                    case 'start':
+                        this.startScreen.style.display = 'flex';
+                        break;
+                    case 'scanner':
+                        this.scannerScreen.style.display = 'block';
+                        break;
+                    case 'ar':
+                        this.arScreen.style.display = 'block';
+                        break;
+                    case 'stamp-sheet':
+                        this.stampSheet.style.display = 'block';
+                        break;
+                }
+                
+                this.currentScreen = screenName;
+                this.log(`Switched to ${screenName} screen`);
+            }
+            
+            async showScanner() {
+                try {
+                    this.log('Starting QR scanner...');
+                    
+                    // カメラ起動
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 720 },
+                            height: { ideal: 720 }
+                        }
+                    });
+                    
+                    this.video.srcObject = this.stream;
+                    await this.video.play();
+                    
+                    // キャンバスサイズ設定
+                    this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+                    
+                    this.showScreen('scanner');
+                    this.startQRScanning();
+                    
+                } catch (error) {
+                    this.log(`Camera error: ${error.message}`);
+                    alert('カメラにアクセスできませんでした。ブラウザの設定を確認してください。');
+                }
+            }
+            
+            startQRScanning() {
+                if (this.currentScreen !== 'scanner') return;
+                
+                this.isScanning = true;
+                
+                const scan = () => {
+                    if (!this.isScanning || this.currentScreen !== 'scanner') return;
+                    
+                    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
+                        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                        
+                        try {
+                            const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+                            
+                            if (qrCode) {
+                                this.log(`QR Code detected: ${qrCode.data}`);
+                                this.handleQRCode(qrCode.data);
+                                return;
+                            }
+                        } catch (error) {
+                            // QR読取りエラーは無視
+                        }
                     }
+                    
+                    requestAnimationFrame(scan);
                 };
                 
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                log('カメラアクセス成功', 'success');
+                scan();
+            }
+            
+            stopQRScanning() {
+                this.isScanning = false;
                 
-                // ストリーム情報をログ
-                const track = stream.getVideoTracks()[0];
-                const settings = track.getSettings();
-                log(`解像度: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+            }
+            
+            handleQRCode(qrData) {
+                this.log(`Processing QR code: ${qrData}`);
                 
-                // AR.jsに任せるためストリームを停止
-                stream.getTracks().forEach(track => track.stop());
-                
-                // UI切り替え
-                setTimeout(() => {
-                    loading.classList.add('hidden');
-                    info.classList.remove('hidden');
-                    stats.classList.remove('hidden');
-                    markerGuide.classList.remove('hidden');
-                    confidenceBar.classList.remove('hidden');
+                // サイトのQRコードかチェック
+                if (qrData.includes('kurumayu1043-tech.github.io/ar-stamp-rallybeta')) {
+                    this.stopQRScanning();
                     
-                    infoText.innerHTML = `
-                        <div style="font-size: 16px; color: #4CAF50;">✨ ARカメラ起動完了</div>
-                        <div style="font-size: 12px; margin-top: 5px;">HIROマーカーをガイド枠内に配置してください</div>
+                    // スタンプの種類を判定（簡単な例）
+                    const stampType = this.determineStampType(qrData);
+                    this.collectStamp(stampType);
+                    this.showAR(stampType);
+                } else {
+                    // 対象外のQRコード
+                    this.log('Non-target QR code detected');
+                    
+                    // 簡単な視覚フィードバック
+                    const scanArea = document.getElementById('scan-area');
+                    scanArea.style.borderColor = '#ff0000';
+                    setTimeout(() => {
+                        if (scanArea) scanArea.style.borderColor = '#00ff00';
+                    }, 500);
+                }
+            }
+            
+            determineStampType(qrData) {
+                // URLパラメータやハッシュでスタンプ種類を判定
+                // 例: ?stamp=entrance, #stage など
+                
+                const url = new URL(qrData);
+                const stampParam = url.searchParams.get('stamp') || 
+                                 url.hash.substring(1) ||
+                                 'entrance'; // デフォルト
+                
+                const validStamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
+                
+                if (validStamps.includes(stampParam)) {
+                    return stampParam;
+                }
+                
+                // ランダムに決定（デモ用）
+                const unCollected = validStamps.filter(stamp => !this.stamps[stamp]);
+                if (unCollected.length > 0) {
+                    return unCollected[Math.floor(Math.random() * unCollected.length)];
+                }
+                
+                return 'entrance'; // フォールバック
+            }
+            
+            collectStamp(stampType) {
+                if (!this.stamps[stampType]) {
+                    this.stamps[stampType] = {
+                        collected: true,
+                        timestamp: new Date().toLocaleString()
+                    };
+                    
+                    this.saveStamps();
+                    this.updateStampSheet();
+                    this.log(`Stamp collected: ${stampType}`);
+                }
+            }
+            
+            showAR(stampType) {
+                this.showScreen('ar');
+                
+                // A-Frameシーンを表示してマスコットを表示
+                this.arScene.style.display = 'block';
+                this.mascot.setAttribute('visible', true);
+                
+                // ARメッセージ表示
+                const stampNames = {
+                    entrance: '正門',
+                    stage: 'ステージ',
+                    food: '食堂', 
+                    game: 'ゲームコーナー',
+                    art: '展示室',
+                    special: '特別ブース'
+                };
+                
+                document.getElementById('stamp-location').textContent = stampNames[stampType] || '文化祭会場';
+                this.arMessage.style.display = 'block';
+                
+                // 3秒後にボタンを表示
+                setTimeout(() => {
+                    document.getElementById('continue-btn').style.display = 'inline-block';
+                }, 3000);
+                
+                this.log(`AR displayed for stamp: ${stampType}`);
+            }
+            
+            showStampSheet() {
+                this.stopQRScanning();
+                
+                // A-Frameシーンを非表示
+                this.arScene.style.display = 'none';
+                this.mascot.setAttribute('visible', false);
+                this.arMessage.style.display = 'none';
+                
+                this.showScreen('stamp-sheet');
+                this.updateStampSheet();
+            }
+            
+            updateStampSheet() {
+                const collectedCount = Object.values(this.stamps).filter(stamp => stamp.collected).length;
+                const totalStamps = 6;
+                const percentage = Math.round((collectedCount / totalStamps) * 100);
+                
+                // カウント更新
+                this.stampCount.textContent = collectedCount;
+                this.progressFill.style.width = `${percentage}%`;
+                this.progressFill.textContent = `${percentage}%`;
+                
+                // 各スタンプスロットの更新
+                Object.keys(this.stamps).forEach(stampType => {
+                    const slot = document.querySelector(`[data-stamp="${stampType}"]`);
+                    const timeElement = document.getElementById(`time-${stampType}`);
+                    
+                    if (this.stamps[stampType].collected) {
+                        slot.classList.add('collected');
+                        timeElement.textContent = this.stamps[stampType].timestamp;
+                    } else {
+                        slot.classList.remove('collected');
+                        timeElement.textContent = '未取得';
+                    }
+                });
+                
+                // 完了チェック
+                if (collectedCount === totalStamps) {
+                    this.showCompletionCelebration();
+                }
+                
+                this.log(`Stamp sheet updated: ${collectedCount}/${totalStamps} stamps`);
+            }
+            
+            showCompletionCelebration() {
+                // 完了時の特別演出
+                const header = document.querySelector('.stamp-sheet-header');
+                header.innerHTML = `
+                    <div style="animation: completion-bounce 2s infinite;">
+                        <h2>🎉 コンプリート！ 🎉</h2>
+                        <p style="color: #FFD700; font-size: 1.2em;">全てのスタンプを集めました！</p>
+                        <p>おめでとうございます！</p>
+                    </div>
+                `;
+                
+                // CSS アニメーション追加
+                if (!document.querySelector('#completion-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'completion-style';
+                    style.textContent = `
+                        @keyframes completion-bounce {
+                            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                            40% { transform: translateY(-10px); }
+                            60% { transform: translateY(-5px); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                this.log('Completion celebration displayed');
+            }
+            
+            shareResults() {
+                const collectedCount = Object.values(this.stamps).filter(stamp => stamp.collected).length;
+                const shareText = `🎪 文化祭スタンプラリー完了！\n${collectedCount}/6個のスタンプを集めました！\n\n#文化祭スタンプラリー #AR体験`;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: '文化祭スタンプラリー',
+                        text: shareText,
+                        url: window.location.href
+                    }).catch(() => {
+                        // フォールバック
+                        this.copyToClipboard(shareText);
+                    });
+                } else {
+                    this.copyToClipboard(shareText);
+                }
+                
+                this.log('Share initiated');
+            }
+            
+            copyToClipboard(text) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('結果をクリップボードにコピーしました！');
+                    });
+                } else {
+                    // フォールバック
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('結果をクリップボードにコピーしました！');
+                }
+            }
+            
+            resetStamps() {
+                if (confirm('本当にスタンプをリセットしますか？\n集めたスタンプが全て削除されます。')) {
+                    this.stamps = this.getDefaultStamps();
+                    this.saveStamps();
+                    this.updateStampSheet();
+                    
+                    // ヘッダーをリセット
+                    document.querySelector('.stamp-sheet-header').innerHTML = `
+                        <h2>🎪 スタンプシート</h2>
+                        <p>集めたスタンプ: <span id="stamp-count">0</span>/6</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 0%;">
+                                0%
+                            </div>
+                        </div>
                     `;
                     
-                    document.getElementById('camera-status').textContent = '動作中';
-                    document.getElementById('camera-status').style.color = '#00FF00';
+                    // 要素を再取得
+                    this.stampCount = document.getElementById('stamp-count');
+                    this.progressFill = document.getElementById('progress-fill');
                     
-                    // AR.jsイベントリスナー設定
-                    setupARListeners();
-                    
-                    // FPS計測開始
-                    updateFPS();
-                    
-                    // 定期的な状態チェック
-                    setInterval(checkARHealth, 2000);
-                    
-                }, isMobile ? 3000 : 2000);
-                
-            } catch (error) {
-                log(`カメラエラー: ${error.message}`, 'error');
-                handleCameraError(error);
+                    alert('スタンプをリセットしました！');
+                    this.log('Stamps reset');
+                }
+            }
+            
+            getDefaultStamps() {
+                return {
+                    entrance: { collected: false, timestamp: null },
+                    stage: { collected: false, timestamp: null },
+                    food: { collected: false, timestamp: null },
+                    game: { collected: false, timestamp: null },
+                    art: { collected: false, timestamp: null },
+                    special: { collected: false, timestamp: null }
+                };
+            }
+            
+            loadStamps() {
+                try {
+                    const saved = localStorage.getItem('ar-stamp-rally-stamps');
+                    if (saved) {
+                        return JSON.parse(saved);
+                    }
+                } catch (error) {
+                    this.log('Error loading stamps from localStorage');
+                }
+                return this.getDefaultStamps();
+            }
+            
+            saveStamps() {
+                try {
+                    localStorage.setItem('ar-stamp-rally-stamps', JSON.stringify(this.stamps));
+                } catch (error) {
+                    this.log('Error saving stamps to localStorage');
+                }
+            }
+        }
+        
+        // アプリケーション初期化
+        let app;
+        
+        window.addEventListener('load', () => {
+            console.log('🎪 AR Stamp Rally - Festival Edition');
+            console.log('Target QR Code: https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/');
+            
+            app = new ARStampRally();
+        });
+        
+        // ページ離脱時のクリーンアップ
+        window.addEventListener('beforeunload', () => {
+            if (app && app.stream) {
+                app.stopQRScanning();
             }
         });
         
-        // ARイベントリスナー設定
-        function setupARListeners() {
-            const marker = document.getElementById('hiro-marker');
-            const scene = document.querySelector('a-scene');
-            
-            if (!marker) {
-                log('マーカー要素が見つかりません', 'error');
-                return;
-            }
-            
-            // マーカー検出イベント
-            marker.addEventListener('markerFound', () => {
-                if (!markerDetected) {
-                    markerDetected = true;
-                    log('HIROマーカー検出！', 'success');
-                    
-                    markerGuide.classList.add('detected');
-                    document.getElementById('marker-status').textContent = '検出中';
-                    document.getElementById('marker-status').style.color = '#00FF00';
-                    
-                    infoText.innerHTML = `
-                        <div style="font-size: 18px; color: #00FF00;">🎉 スタンプ発見！</div>
-                        <div style="font-size: 12px; margin-top: 5px;">マーカーを安定させてください</div>
-                    `;
-                    
-                    info.style.borderColor = '#00FF00';
-                    info.style.boxShadow = '0 0 20px #00FF00';
-                    
-                    // 認識強度を段階的に上げる
-                    let confidence = 0;
-                    const increaseConfidence = setInterval(() => {
-                        confidence += 10;
-                        updateConfidence(confidence);
-                        if (confidence >= 100) {
-                            clearInterval(increaseConfidence);
-                        }
-                    }, 100);
+        // デモ用：キーボードショートカット（開発時のテスト用）
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'd' && e.ctrlKey) {
+                e.preventDefault();
+                if (app) {
+                    app.debugMode = !app.debugMode;
+                    document.getElementById('debug-info').style.display = app.debugMode ? 'block' : 'none';
+                    app.log(`Debug mode: ${app.debugMode ? 'ON' : 'OFF'}`);
                 }
-            });
-            
-            // マーカーロストイベント
-            marker.addEventListener('markerLost', () => {
-                if (markerDetected) {
-                    markerDetected = false;
-                    log('マーカーロスト');
-                    
-                    markerGuide.classList.remove('detected');
-                    document.getElementById('marker-status').textContent = '探索中';
-                    document.getElementById('marker-status').style.color = '#FFD700';
-                    
-                    infoText.innerHTML = `
-                        <div style="font-size: 14px;">マーカーを探しています...</div>
-                        <div style="font-size: 12px; margin-top: 5px; color: #888;">ガイド枠内にマーカーを配置してください</div>
-                    `;
-                    
-                    info.style.borderColor = '#4CAF50';
-                    info.style.boxShadow = 'none';
-                    
-                    // 認識強度を段階的に下げる
-                    let confidence = detectionConfidence;
-                    const decreaseConfidence = setInterval(() => {
-                        confidence -= 20;
-                        updateConfidence(confidence);
-                        if (confidence <= 0) {
-                            clearInterval(decreaseConfidence);
-                        }
-                    }, 100);
-                }
-            });
-            
-            // シーンイベント
-            if (scene) {
-                scene.addEventListener('arjs-video-loaded', () => {
-                    log('AR.jsビデオ読み込み完了', 'success');
-                });
-                
-                scene.addEventListener('camera-init', () => {
-                    log('ARカメラ初期化完了', 'success');
-                });
-            }
-        }
-        
-        // AR動作状態チェック
-        function checkARHealth() {
-            const video = document.querySelector('#arjs-video') || document.querySelector('video');
-            const canvas = document.querySelector('.a-canvas');
-            
-            if (video && video.readyState >= 2) {
-                document.getElementById('camera-status').textContent = '正常';
-                document.getElementById('camera-status').style.color = '#00FF00';
-            } else {
-                document.getElementById('camera-status').textContent = '確認中';
-                document.getElementById('camera-status').style.color = '#FFD700';
             }
             
-            // マーカー未検出が続く場合のヒント表示
-            if (!markerDetected && detectionConfidence === 0) {
-                const hints = [
-                    "明るい場所に移動してみてください",
-                    "マーカーとの距離を20-40cmに調整",
-                    "マーカーが平らになっているか確認",
-                    "カメラレンズが汚れていないか確認",
-                    "マーカーの印刷品質を確認"
-                ];
-                const randomHint = hints[Math.floor(Math.random() * hints.length)];
-                document.getElementById('guide-text').textContent = `💡 ${randomHint}`;
-            }
-        }
-        
-        // カメラエラーハンドリング
-        function handleCameraError(error) {
-            let errorMessage = "";
-            let solution = "";
-            
-            switch (error.name) {
-                case 'NotAllowedError':
-                    errorMessage = "カメラの許可が拒否されました";
-                    solution = "ブラウザ設定でカメラを許可してください";
-                    break;
-                case 'NotFoundError':
-                    errorMessage = "カメラが見つかりません";
-                    solution = "デバイスにカメラが接続されているか確認してください";
-                    break;
-                case 'NotSupportedError':
-                case 'TypeError':
-                    errorMessage = "このブラウザはサポートされていません";
-                    solution = "Chrome、Firefox、またはSafariをお使いください";
-                    break;
-                default:
-                    errorMessage = "カメラの起動に失敗しました";
-                    solution = "ページを再読み込みしてお試しください";
-            }
-            
-            status.innerHTML = `
-                <div style="color: #FF4444; font-size: 18px; margin-bottom: 10px;">⚠️ ${errorMessage}</div>
-                <div style="font-size: 14px; margin-bottom: 15px; color: #CCC;">${solution}</div>
-                <button onclick="location.reload()" 
-                        style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
-                    🔄 再読み込み
-                </button>
-            `;
-        }
-        
-        // ページ読み込み時の初期化
-        window.addEventListener('load', () => {
-            log(`デバイス: ${isMobile ? (isIOS ? 'iOS' : 'Android') : 'Desktop'}`);
-            log(`ブラウザ: ${navigator.userAgent.substring(0, 50)}...`);
-            
-            // HTTPS確認
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                log('⚠️ HTTPSが必要です', 'error');
-                status.innerHTML = `
-                    <div style="color: #FF4444;">セキュアな接続（HTTPS）が必要です</div>
-                `;
-            }
-            
-            // WebRTC対応確認
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                log('WebRTC非対応', 'error');
-                status.innerHTML = `
-                    <div style="color: #FF4444;">このブラウザはカメラ機能に対応していません</div>
-                `;
+            // テスト用：数字キーでスタンプ追加
+            if (app && app.debugMode && e.key >= '1' && e.key <= '6') {
+                const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
+                const stampType = stamps[parseInt(e.key) - 1];
+                app.collectStamp(stampType);
+                app.showAR(stampType);
+                app.log(`Debug: Added stamp ${stampType}`);
             }
         });
     </script>
 </body>
 </html>
-
-
