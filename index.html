@@ -4,8 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
     <title>文化祭 ARスタンプラリー</title>
-    <!-- jsQRライブラリをローカルで読み込むように変更 -->
-    <!-- CDNで読み込みエラーが発生する場合があるため -->
+    <!-- Correctly load jsQR from a local file -->
     <script src="./jsQR.js"></script>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
@@ -372,11 +371,82 @@
                 gap: 15px;
             }
         }
+        
+        /* Custom error message box */
+        #error-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 10000;
+            display: none;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Custom confirmation modal for reset */
+        #confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #confirm-box {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            max-width: 90%;
+        }
+        
+        #confirm-box p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        #confirm-box button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        #confirm-box #confirm-yes {
+            background-color: #ff6347;
+            color: white;
+        }
+        
+        #confirm-box #confirm-no {
+            background-color: #ddd;
+            color: #333;
+        }
+        
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- スタート画面 -->
+        <!-- Start screen -->
         <div id="start-screen">
             <h1>🎪 文化祭スタンプラリー</h1>
             <p class="subtitle">QRコードを読み込んでARマスコットに会おう！</p>
@@ -390,7 +460,7 @@
             </div>
         </div>
 
-        <!-- QRスキャナー画面 -->
+        <!-- QR scanner screen -->
         <div id="scanner-screen">
             <video id="video" playsinline></video>
             <canvas id="canvas" style="display: none;"></canvas>
@@ -404,7 +474,7 @@
             </div>
         </div>
 
-        <!-- AR表示画面 -->
+        <!-- AR display screen -->
         <div id="ar-screen">
             <canvas id="ar-canvas"></canvas>
             <div id="ar-overlay">
@@ -418,7 +488,7 @@
             </div>
         </div>
 
-        <!-- スタンプシート画面 -->
+        <!-- Stamp sheet screen -->
         <div id="stamp-sheet">
             <div class="stamp-sheet-header">
                 <h2>🎪 スタンプシート</h2>
@@ -470,7 +540,21 @@
             </div>
         </div>
 
-        <!-- デバッグ情報 -->
+        <!-- Custom error message box -->
+        <div id="error-box">
+            <span id="error-message"></span>
+        </div>
+        
+        <!-- Custom confirmation modal for reset -->
+        <div id="confirm-modal">
+            <div id="confirm-box">
+                <p id="confirm-message">スタンプシートをリセットしますか？</p>
+                <button id="confirm-yes">はい</button>
+                <button id="confirm-no">いいえ</button>
+            </div>
+        </div>
+
+        <!-- Debug info -->
         <div id="debug-info">
             <div id="debug-text">Debug Info</div>
         </div>
@@ -565,241 +649,6 @@
     </a-scene>
 
     <script>
-        /**
-         * jsQRライブラリのコード本体
-         * GitHubリポジトリにjsQR.jsファイルを追加し、この内容を貼り付けてください。
-         * CDNの読み込みエラーを回避するために、コードを直接含めます。
-         * This code is a direct copy from the original jsQR library.
-         */
-        
-        var jsQR = (function() {
-            function b(a, b, c, d) {
-                var e = new Uint8ClampedArray(a.width * a.height * 4);
-                return e.set(a.data),
-                d && (c = c / d),
-                {
-                    width: a.width,
-                    height: a.height,
-                    data: e,
-                    hasGrayscale: !1,
-                    hasLuminance: !1,
-                    getGray: function(e, f) {
-                        return this.hasGrayscale || (a.is-grayscale ? (e = f * this.width + e,
-                        e = c * (this.data[4 * e] + this.data[4 * e + 1] + this.data[4 * e + 2]) / 3) : e = c * (a.data[4 * (f * this.width + e)] + a.data[4 * (f * this.width + e) + 1] + a.data[4 * (f * this.width + e) + 2]) / 3,
-                        this.data[4 * (f * this.width + e)] = this.data[4 * (f * this.width + e) + 1] = this.data[4 * (f * this.width + e) + 2] = e,
-                        this.hasGrayscale = !0),
-                        this.data[4 * (f * this.width + e)]
-                    },
-                    getLuminance: function(e, f) {
-                        return this.hasLuminance || (e = c * (a.data[4 * (f * this.width + e)] + a.data[4 * (f * this.width + e) + 1] + a.data[4 * (f * this.width + e) + 2]) / 3,
-                        this.data[4 * (f * this.width + e)] = this.data[4 * (f * this.width + e) + 1] = this.data[4 * (f * this.width + e) + 2] = e,
-                        this.hasLuminance = !0),
-                        this.data[4 * (f * this.width + e)]
-                    }
-                }
-            }
-            function c(a, c, d, e, f, g, h, i) {
-                return a = b(a, c, d, e),
-                c = f * a.width + g,
-                d = h * a.width + i,
-                f = a.width,
-                g = a.height,
-                {
-                    width: a.width,
-                    height: a.height,
-                    data: new Uint8ClampedArray(a.width * a.height * 4),
-                    get: function(b, c) {
-                        return this.data[4 * (c * this.width + b)]
-                    }
-                }
-            }
-            function d(a, b) {
-                var c = a.width
-                  , d = a.height
-                  , e = new Uint8ClampedArray(c * d)
-                  , f = a.getGray;
-                for (var g = 0; g < d; g++)
-                    for (var h = 0; h < c; h++)
-                        e[g * c + h] = f(h, g) < b ? 0 : 255;
-                return {
-                    width: c,
-                    height: d,
-                    data: e,
-                    get: function(a, b) {
-                        return this.data[b * c + a]
-                    }
-                }
-            }
-            function e(a, b, c) {
-                var d = a.width
-                  , e = a.height;
-                for (var f = 0; f < e; f++)
-                    for (var g = 0; g < d; g++)
-                        if (a.get(g, f))
-                            return 255;
-                return a.get(c, d)
-            }
-            function f(a) {
-                var b = a.width
-                  , c = a.height;
-                for (var d = 0; d < c; d++)
-                    for (var e = 0; e < b; e++)
-                        if (!a.get(e, d))
-                            return d
-            }
-            function g(a) {
-                var b = a.width
-                  , c = a.height;
-                for (var d = c - 1; d >= 0; d--)
-                    for (var e = b - 1; e >= 0; e--)
-                        if (!a.get(e, d))
-                            return d
-            }
-            function h(a) {
-                var b = a.width
-                  , c = a.height;
-                for (var d = 0; d < b; d++)
-                    for (var e = 0; e < c; e++)
-                        if (!a.get(d, e))
-                            return d
-            }
-            function i(a) {
-                var b = a.width
-                  , c = a.height;
-                for (var d = b - 1; d >= 0; d--)
-                    for (var e = 0; e < c; e++)
-                        if (!a.get(d, e))
-                            return d
-            }
-            function j(a, b) {
-                if (b.data === a.data)
-                    throw new Error("Cannot invert in place");
-                var c = a.width
-                  , d = a.height;
-                for (var e = 0; e < d; e++)
-                    for (var f = 0; f < c; f++)
-                        b.get(f, e) ? a.set(f, e, 0) : a.set(f, e, 255)
-            }
-            function k(a, b) {
-                if (b.data === a.data)
-                    throw new Error("Cannot invert in place");
-                var c = a.width
-                  , d = a.height;
-                for (var e = 0; e < d; e++)
-                    for (var f = 0; f < c; f++)
-                        a.set(f, e, 255 - b.get(f, e))
-            }
-            function l(a, b, c, d) {
-                var e = b.get(c, d);
-                b.set(c, d, 255);
-                var f = 0;
-                var g = []
-                  , h = []
-                  , i = 0
-                  , j = 0;
-                g[f] = c,
-                h[f] = d,
-                f++;
-                for (; f; ) {
-                    c = g[f - 1],
-                    d = h[f - 1],
-                    f--;
-                    for (var k = c - 1; k <= c + 1; k++)
-                        for (var l = d - 1; l <= d + 1; l++)
-                            if (!(k < 0 || l < 0 || k >= b.width || l >= b.height) && b.get(k, l) === e) {
-                                b.set(k, l, 255),
-                                g[f] = k,
-                                h[f] = l,
-                                f++;
-                                break
-                            }
-                }
-            }
-            function m(a, b, c) {
-                for (var d = c - 1; d <= c + 1; d++)
-                    for (var e = a - 1; e <= a + 1; e++)
-                        if (b.get(e, d))
-                            return !0;
-                return !1
-            }
-            function n(a, b, c) {
-                var d = a.width
-                  , e = a.height
-                  , f = new Uint8ClampedArray(d * e);
-                for (var g = 0; g < e; g++)
-                    for (var h = 0; h < d; h++)
-                        f[g * d + h] = b.get(h, g) && c.get(h, g) ? 255 : 0;
-                return {
-                    width: d,
-                    height: e,
-                    data: f,
-                    get: function(a, b) {
-                        return this.data[b * d + a]
-                    }
-                }
-            }
-            function o(a, b) {
-                return (255 - a.get(b[0][0], b[0][1])) / 255
-            }
-            function p(a) {
-                var b = a.width
-                  , c = a.height;
-                var d = b - 1
-                  , e = c - 1;
-                return [[d, e]]
-            }
-            function q(a, b) {
-                var c = a.width
-                  , d = a.height;
-                if (!c || !d)
-                    return null;
-                b = b || {};
-                var e = new Uint8ClampedArray(c * d);
-                for (var f = 0; f < d; f++)
-                    for (var g = 0; g < c; g++)
-                        e[f * c + g] = 255 - a.get(g, f);
-                var h = {
-                    width: c,
-                    height: d,
-                    data: e,
-                    get: function(a, b) {
-                        return this.data[b * c + a]
-                    }
-                }
-                  , i = d(h, 128)
-                  , j = d(h, 192)
-                  , k = n(a, i, j);
-                if (k.get(c / 2, d / 2))
-                    return null;
-                for (var l = 0; l < d; l++)
-                    for (var m = 0; m < c; m++)
-                        if (!k.get(m, l)) {
-                            l(k, k, m, l);
-                            break
-                        }
-                if (!k.get(0, 0))
-                    return null;
-                var o = p(k);
-                if (o.length != 1)
-                    return null;
-                var q = o[0]
-                  , r = c(a, 0, 0, 255, q[0], q[1], c, d);
-                return r
-            }
-            return function(a, b, c, d) {
-                if (!a)
-                    return null;
-                c = c || a.width,
-                b = b || a.height;
-                var e = {
-                    width: c,
-                    height: b,
-                    data: a
-                };
-                return q(e, d)
-            }
-        })();
-        
         class ARStampRally {
             constructor() {
                 this.currentScreen = 'start';
@@ -846,6 +695,13 @@
                 // UI elements
                 this.stampCount = document.getElementById('stamp-count');
                 this.progressFill = document.getElementById('progress-fill');
+                
+                // Custom UI elements for alerts and confirmations
+                this.errorBox = document.getElementById('error-box');
+                this.errorMessage = document.getElementById('error-message');
+                this.confirmModal = document.getElementById('confirm-modal');
+                this.confirmYesBtn = document.getElementById('confirm-yes');
+                this.confirmNoBtn = document.getElementById('confirm-no');
             }
 
             bindEvents() {
@@ -854,7 +710,10 @@
                 this.continueBtn.addEventListener('click', () => this.showStampSheet());
                 this.scanMoreBtn.addEventListener('click', () => this.showScanner());
                 this.shareBtn.addEventListener('click', () => this.shareResults());
-                this.resetBtn.addEventListener('click', () => this.resetStamps());
+                this.resetBtn.addEventListener('click', () => this.showConfirmModal('スタンプシートをリセットしますか？', () => {
+                    this.resetStamps();
+                    this.hideConfirmModal();
+                }));
             }
 
             log(message) {
@@ -865,6 +724,38 @@
                     const debugElement = document.getElementById('debug-text');
                     debugElement.innerHTML = logMessage + '<br>' + debugElement.innerHTML;
                 }
+            }
+            
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorBox.style.display = 'block';
+                setTimeout(() => {
+                    this.errorBox.style.display = 'none';
+                }, 3000);
+            }
+            
+            showConfirmModal(message, onConfirm) {
+                document.getElementById('confirm-message').textContent = message;
+                this.confirmModal.style.display = 'flex';
+                
+                const yesHandler = () => {
+                    onConfirm();
+                    this.confirmYesBtn.removeEventListener('click', yesHandler);
+                    this.confirmNoBtn.removeEventListener('click', noHandler);
+                };
+                
+                const noHandler = () => {
+                    this.hideConfirmModal();
+                    this.confirmYesBtn.removeEventListener('click', yesHandler);
+                    this.confirmNoBtn.removeEventListener('click', noHandler);
+                };
+                
+                this.confirmYesBtn.addEventListener('click', yesHandler);
+                this.confirmNoBtn.addEventListener('click', noHandler);
+            }
+            
+            hideConfirmModal() {
+                this.confirmModal.style.display = 'none';
             }
 
             showScreen(screenName) {
@@ -913,14 +804,7 @@
                     this.startQRScanning();
                 } catch (error) {
                     this.log(`Camera error: ${error.message}`);
-                    const errorMessage = document.createElement('div');
-                    errorMessage.textContent = 'カメラにアクセスできませんでした。ブラウザの設定を確認してください。';
-                    errorMessage.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background: rgba(0,0,0,0.8); color: white; border-radius: 10px; z-index: 10000; text-align: center;';
-                    document.body.appendChild(errorMessage);
-
-                    setTimeout(() => {
-                        document.body.removeChild(errorMessage);
-                    }, 5000);
+                    this.showError('カメラにアクセスできませんでした。ブラウザの設定を確認してください。');
                 }
             }
 
@@ -971,14 +855,25 @@
             handleQRCode(data) {
                 this.log(`Handling QR Code data: ${data}`);
                 // Simple URL parameter check for stamp types
-                const url = new URL(data);
-                const stampType = url.searchParams.get('stamp');
-
-                if (stampType) {
-                    this.log(`Stamp type found: ${stampType}`);
-                    this.collectStamp(stampType);
-                } else {
-                    this.log('No stamp parameter found in URL, checking for simple string...');
+                try {
+                    const url = new URL(data);
+                    const stampType = url.searchParams.get('stamp');
+                    if (stampType) {
+                        this.log(`Stamp type found: ${stampType}`);
+                        this.collectStamp(stampType);
+                    } else {
+                        this.log('No stamp parameter found in URL, checking for simple string...');
+                        const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
+                        if (stamps.includes(data)) {
+                            this.log(`Simple stamp string found: ${data}`);
+                            this.collectStamp(data);
+                        } else {
+                            this.log('QR code data does not match a valid stamp.');
+                            this.showError('無効なQRコードです。');
+                        }
+                    }
+                } catch (e) {
+                    this.log('QR code data is not a valid URL.');
                     const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
                     if (stamps.includes(data)) {
                         this.log(`Simple stamp string found: ${data}`);
@@ -988,17 +883,6 @@
                         this.showError('無効なQRコードです。');
                     }
                 }
-            }
-
-            showError(message) {
-                const errorMessage = document.createElement('div');
-                errorMessage.textContent = message;
-                errorMessage.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background: rgba(255,0,0,0.8); color: white; border-radius: 10px; z-index: 10000; text-align: center;';
-                document.body.appendChild(errorMessage);
-                
-                setTimeout(() => {
-                    document.body.removeChild(errorMessage);
-                }, 3000);
             }
 
             loadStamps() {
@@ -1114,25 +998,16 @@
                 } else {
                     this.log('Web Share API is not supported.');
                     // Fallback for browsers that do not support the Web Share API
-                    const shareMessageBox = document.createElement('div');
-                    shareMessageBox.textContent = `このブラウザは共有機能をサポートしていません。\n以下のテキストをコピーして共有してください：\n${shareText}`;
-                    shareMessageBox.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background: rgba(0,0,0,0.8); color: white; border-radius: 10px; z-index: 10000; text-align: center; white-space: pre-wrap;';
-                    document.body.appendChild(shareMessageBox);
-
-                    setTimeout(() => {
-                        document.body.removeChild(shareMessageBox);
-                    }, 5000);
+                    this.showError(`このブラウザは共有機能をサポートしていません。以下のテキストをコピーして共有してください：\n${shareText}`);
                 }
             }
 
             resetStamps() {
-                if (window.confirm('スタンプシートをリセットしますか？')) {
-                    localStorage.removeItem('stamps');
-                    this.stamps = {};
-                    this.updateStampSheet();
-                    this.log('Stamps have been reset.');
-                    this.showScreen('start');
-                }
+                localStorage.removeItem('stamps');
+                this.stamps = {};
+                this.updateStampSheet();
+                this.log('Stamps have been reset.');
+                this.showScreen('start');
             }
         }
 
