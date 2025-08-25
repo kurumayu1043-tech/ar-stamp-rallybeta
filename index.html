@@ -4,7 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
     <title>文化祭 ARスタンプラリー</title>
+    <!-- jsQRライブラリをCDNから読み込みます -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <!-- A-FrameライブラリをCDNから読み込みます -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
         * {
@@ -262,9 +264,8 @@
         </div>
 
         <!-- A-Frame AR Scene -->
-        <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        <a-scene id="ar-scene" embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
             <a-camera gps-camera rotation-reader></a-camera>
-            <a-entity gltf-model="https://aframe.io/examples/ar/gears.glb" position="0 0 -5"></a-entity>
         </a-scene>
 
         <!-- 戻るボタン -->
@@ -276,7 +277,10 @@
     </div>
 
     <script>
-        // デバッグ用
+        /**
+         * デバッグ用ログ出力関数
+         * @param {string} message - ログメッセージ
+         */
         const logConsole = document.getElementById('log-console');
         function log(message) {
             console.log(message);
@@ -299,6 +303,9 @@
             
             log: log,
 
+            /**
+             * アプリケーションの初期化
+             */
             init() {
                 this.loadStamps();
                 this.setupEventListeners();
@@ -307,24 +314,37 @@
                 log('AR Stamp Rally initialized');
             },
 
+            /**
+             * localStorageからスタンプデータをロード
+             */
             loadStamps() {
                 const savedStamps = localStorage.getItem('arStamps');
                 if (savedStamps) {
-                    const parsedStamps = JSON.parse(savedStamps);
-                    // 既存のスタンプオブジェクトとマージして、新しいスタンプが追加されても対応できるようにする
-                    Object.keys(this.stamps).forEach(key => {
-                        if (parsedStamps[key]) {
-                            this.stamps[key].collected = parsedStamps[key].collected;
-                        }
-                    });
-                    log('Stamps loaded from localStorage');
+                    try {
+                        const parsedStamps = JSON.parse(savedStamps);
+                        Object.keys(this.stamps).forEach(key => {
+                            if (parsedStamps[key]) {
+                                this.stamps[key].collected = parsedStamps[key].collected;
+                            }
+                        });
+                        log('Stamps loaded from localStorage');
+                    } catch (e) {
+                        log('Error parsing localStorage data, resetting stamps.');
+                        localStorage.removeItem('arStamps');
+                    }
                 }
             },
 
+            /**
+             * localStorageにスタンプデータを保存
+             */
             saveStamps() {
                 localStorage.setItem('arStamps', JSON.stringify(this.stamps));
             },
 
+            /**
+             * イベントリスナーの設定
+             */
             setupEventListeners() {
                 document.getElementById('start-button').addEventListener('click', () => this.showScreen('scanner'));
                 document.getElementById('stamps-button').addEventListener('click', () => this.showScreen('stamps'));
@@ -333,20 +353,24 @@
                 document.getElementById('show-start-button').addEventListener('click', () => this.showScreen('start'));
             },
 
+            /**
+             * 画面切り替え
+             * @param {string} screenId - 切り替える画面ID ('start', 'scanner', 'stamps', 'ar')
+             */
             showScreen(screenId) {
                 this.currentScreen = screenId;
                 
                 const startScreen = document.getElementById('start-screen');
                 const scannerScreen = document.getElementById('scanner-screen');
                 const stampScreen = document.getElementById('stamp-screen');
-                const arScene = document.querySelector('a-scene');
+                const arScene = document.getElementById('ar-scene');
                 const backButton = document.getElementById('back-button');
                 const arBackButton = document.getElementById('ar-back-button');
                 
                 startScreen.style.display = 'none';
                 scannerScreen.style.display = 'none';
                 stampScreen.style.display = 'none';
-                arScene.style.display = 'none';
+                if (arScene) arScene.style.display = 'none';
                 backButton.style.display = 'none';
                 arBackButton.style.display = 'none';
 
@@ -362,12 +386,15 @@
                     backButton.style.display = 'block';
                     this.renderStamps();
                 } else if (screenId === 'ar') {
-                    arScene.style.display = 'block';
+                    if (arScene) arScene.style.display = 'block';
                     arBackButton.style.display = 'block';
                     this.stopScanner();
                 }
             },
 
+            /**
+             * QRスキャナーを開始
+             */
             startScanner() {
                 const video = document.getElementById('qr-video');
                 const loadingIndicator = document.getElementById('loading-indicator');
@@ -397,6 +424,10 @@
                     });
             },
 
+            /**
+             * QRスキャンループ
+             * @param {HTMLVideoElement} video - ビデオ要素
+             */
             scanLoop(video) {
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
@@ -429,6 +460,9 @@
                 requestAnimationFrame(tick);
             },
             
+            /**
+             * QRスキャナーを停止
+             */
             stopScanner() {
                 const video = document.getElementById('qr-video');
                 if (video.srcObject) {
@@ -437,6 +471,10 @@
                 log('QR scanning stopped.');
             },
 
+            /**
+             * QRコードデータの処理
+             * @param {string} qrData - QRコードから読み取ったデータ
+             */
             handleQRCode(qrData) {
                 const urlParams = new URLSearchParams(qrData.split('?')[1]);
                 const stampType = urlParams.get('stamp');
@@ -455,6 +493,10 @@
                 }
             },
 
+            /**
+             * スタンプを収集し、データを保存
+             * @param {string} stampType - 収集するスタンプのタイプ
+             */
             collectStamp(stampType) {
                 if (this.stamps[stampType]) {
                     this.stamps[stampType].collected = true;
@@ -463,8 +505,13 @@
                 }
             },
 
+            /**
+             * スタンプシートの表示を更新
+             */
             renderStamps() {
                 const stampGrid = document.getElementById('stamp-grid');
+                if (!stampGrid) return;
+                
                 stampGrid.innerHTML = '';
                 Object.keys(this.stamps).forEach(key => {
                     const stamp = this.stamps[key];
@@ -485,8 +532,18 @@
                 });
             },
 
+            /**
+             * ARコンテンツの表示
+             * @param {string} stampType - 表示するスタンプのタイプ
+             */
             showAR(stampType) {
-                const arScene = document.querySelector('a-scene');
+                const arScene = document.getElementById('ar-scene');
+                if (!arScene) {
+                    log('AR scene element not found.');
+                    return;
+                }
+                
+                // 既存のAR要素があれば削除
                 const existingModel = arScene.querySelector('#ar-model');
                 if (existingModel) {
                     arScene.removeChild(existingModel);
@@ -502,7 +559,7 @@
                 document.body.appendChild(arMessage);
                 
                 // スタンプの種類に応じて表示する3Dモデルを切り替える
-                let modelUrl = '';
+                let modelUrl = 'https://aframe.io/examples/ar/gears.glb'; // デフォルト
                 switch (stampType) {
                     case 'entrance':
                         modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/gears/gears.glb';
@@ -522,8 +579,6 @@
                     case 'special':
                         modelUrl = 'https://raw.githubusercontent.com/aframevr/aframe-asset-library/master/dist/assets/models/fish/fish.gltf';
                         break;
-                    default:
-                        modelUrl = 'https://aframe.io/examples/ar/gears.glb';
                 }
 
                 const arElement = document.createElement('a-entity');
@@ -532,8 +587,8 @@
                 arElement.setAttribute('position', '0 0 -5');
                 arElement.setAttribute('scale', '0.5 0.5 0.5');
 
-                // ここが修正点：bodyではなくa-sceneに子要素として追加する
-                document.querySelector('a-scene').appendChild(arElement);
+                // A-Frameシーンの子要素としてAR要素を追加
+                arScene.appendChild(arElement);
 
                 this.showScreen('ar');
 
@@ -566,7 +621,8 @@
             if (app && e.key === ' ' && app.currentScreen === 'scanner') {
                 e.preventDefault();
                 app.log('Space key test - simulating QR detection');
-                app.handleQRCode('https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/?stamp=test');
+                // テスト用のダミーURLに変更
+                app.handleQRCode('https://example.com/?stamp=entrance');
             }
         });
         
@@ -583,7 +639,8 @@
                 // 3回連続タップでテストQRコード認識
                 if (touchCount >= 3) {
                     app.log('Triple tap detected - simulating QR detection');
-                    app.handleQRCode('test-stamp-festival');
+                    // テスト用のダミーURLに変更
+                    app.handleQRCode('https://example.com/?stamp=entrance');
                     touchCount = 0;
                     return;
                 }
