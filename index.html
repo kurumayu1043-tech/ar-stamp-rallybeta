@@ -108,7 +108,7 @@
             animation: scan-pulse 2s infinite;
         }
 
-        #qr-reader.recognized #qr-reader__scan_region {
+        .recognized #qr-reader__scan_region {
             border-color: #8A2BE2; /* Change border color to purple on recognition */
             animation: none; /* Stop animation */
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(138, 43, 226, 0.3);
@@ -354,43 +354,6 @@
             color: #667eea;
         }
 
-        /* Debug info styles */
-        #debug-info {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff00;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            max-width: 300px;
-            z-index: 9999;
-            display: none;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Responsive styles */
-        @media (max-width: 480px) {
-            #start-screen h1 {
-                font-size: 2rem;
-            }
-
-            #qr-reader__scan_region {
-                width: 200px !important;
-                height: 200px !important;
-            }
-
-            .stamp-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 15px;
-            }
-        }
-
         /* Custom error message box */
         #error-box {
             position: fixed;
@@ -486,7 +449,6 @@
         <div id="scanner-screen">
             <!-- Container for the QR reader. html5-qrcode will add video and canvas elements here. -->
             <div id="qr-reader"></div>
-
             <div id="scanner-overlay">
                 <div id="scan-instruction">
                     📱 QRコードを緑の枠内に合わせてください
@@ -675,24 +637,16 @@
                 this.bindEvents();
                 this.updateStampSheet();
                 
-                // Debug mode
-                this.debugMode = false;
-                if (this.debugMode) {
-                     // Debug info is removed in this version for cleaner code.
-                     // It can be added back if needed for debugging.
-                }
                 console.log('AR Stamp Rally initialized');
             }
 
             initElements() {
-                // Screen elements
                 this.startScreen = document.getElementById('start-screen');
                 this.scannerScreen = document.getElementById('scanner-screen');
                 this.arScreen = document.getElementById('ar-screen');
                 this.stampSheet = document.getElementById('stamp-sheet');
                 this.qrReader = document.getElementById('qr-reader');
 
-                // Button elements
                 this.startBtn = document.getElementById('start-btn');
                 this.backBtn = document.getElementById('back-btn');
                 this.continueBtn = document.getElementById('continue-btn');
@@ -700,16 +654,13 @@
                 this.shareBtn = document.getElementById('share-btn');
                 this.resetBtn = document.getElementById('reset-btn');
 
-                // AR elements
                 this.arScene = document.getElementById('ar-scene');
                 this.mascot = document.getElementById('mascot');
                 this.arMessage = document.getElementById('ar-message');
 
-                // UI elements
                 this.stampCount = document.getElementById('stamp-count');
                 this.progressFill = document.getElementById('progress-fill');
 
-                // Custom UI elements for alerts and confirmations
                 this.errorBox = document.getElementById('error-box');
                 this.errorMessage = document.getElementById('error-message');
                 this.confirmModal = document.getElementById('confirm-modal');
@@ -790,54 +741,58 @@
             }
             
             async showScanner() {
-                try {
-                    this.log('Starting QR scanner...');
-                    this.showScreen('scanner');
+                this.log('Starting QR scanner...');
+                this.showScreen('scanner');
 
-                    // Stop any existing scanner instance before starting a new one
-                    if (this.qrCodeScanner && this.isScanning) {
+                // Stop any existing scanner instance before starting a new one
+                if (this.qrCodeScanner && this.isScanning) {
+                    try {
                         await this.qrCodeScanner.stop();
+                    } catch (err) {
+                        this.log(`Error stopping previous scanner: ${err}`);
                     }
-
-                    // Create a new scanner instance
-                    this.qrCodeScanner = new Html5QrcodeScanner("qr-reader", {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        disableFlip: false
-                    }, false); // verbose mode
-
-                    const onScanSuccess = (decodedText, decodedResult) => {
-                        this.log(`QR Code detected: ${decodedText}`);
-                        document.getElementById('qr-reader').classList.add('recognized');
-                        // Stop the scanner immediately after a successful scan
-                        this.qrCodeScanner.stop().then(() => {
-                            this.isScanning = false;
-                            this.handleQRCode(decodedText);
-                        }).catch(err => {
-                            this.log(`Error stopping scanner: ${err}`);
-                            this.handleQRCode(decodedText);
-                        });
-                    };
-
-                    const onScanError = (errorMessage) => {
-                         // Log errors but don't show to user unless critical
-                         // The library handles most of the internal errors automatically.
-                         this.log(`QR Scanner Error: ${errorMessage}`);
-                    };
-
-                    // Start scanning
-                    this.qrCodeScanner.render(onScanSuccess, onScanError).then(() => {
-                        this.isScanning = true;
-                        this.log("Scanner started successfully.");
-                    }).catch(err => {
-                        this.showError('カメラの起動に失敗しました。');
-                        this.log(`Failed to start scanner: ${err}`);
-                    });
-
-                } catch (error) {
-                    this.log(`Camera access error: ${error.message}`);
-                    this.showError('カメラにアクセスできませんでした。ブラウザの設定を確認してください。');
                 }
+
+                // Create a new scanner instance
+                this.qrCodeScanner = new Html5QrcodeScanner("qr-reader", {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    disableFlip: false
+                }, false); // verbose mode is false
+
+                const onScanSuccess = (decodedText, decodedResult) => {
+                    this.log(`QR Code detected: ${decodedText}`);
+                    document.getElementById('qr-reader').classList.add('recognized');
+                    // Stop the scanner immediately after a successful scan
+                    this.qrCodeScanner.stop().then(() => {
+                        this.isScanning = false;
+                        this.handleQRCode(decodedText);
+                    }).catch(err => {
+                        this.log(`Error stopping scanner: ${err}`);
+                        this.handleQRCode(decodedText);
+                    });
+                };
+
+                const onScanError = (errorMessage) => {
+                    // Log errors but don't show to user unless critical
+                    // The library handles most of the internal errors automatically.
+                    this.log(`QR Scanner Error: ${errorMessage}`);
+                };
+
+                // Start scanning
+                this.qrCodeScanner.render(onScanSuccess, onScanError).then(() => {
+                    this.isScanning = true;
+                    this.log("Scanner started successfully.");
+                }).catch(err => {
+                    this.log(`Failed to start scanner: ${err}`);
+                    if (err.message && err.message.includes('permission denied')) {
+                        this.showError('カメラへのアクセスが拒否されました。ブラウザの設定で許可してください。');
+                    } else if (err.message && err.message.includes('NotReadableError')) {
+                        this.showError('カメラが使用中です。他のアプリやタブを閉じてください。');
+                    } else {
+                        this.showError('カメラの起動に失敗しました。');
+                    }
+                });
             }
 
             async stopScanner() {
@@ -949,7 +904,6 @@
                 this.log(`Showing AR for: ${stampType}`);
                 this.showScreen('ar');
 
-                // Update UI for celebration message
                 const stampLocations = {
                     'entrance': '正門',
                     'stage': 'ステージ',
@@ -963,13 +917,11 @@
                 this.arMessage.style.display = 'block';
                 this.arScene.style.display = 'block';
 
-                // Display the mascot
                 this.mascot.setAttribute('visible', 'true');
 
-                // Set a timer to hide AR after a few seconds and show the stamp sheet
                 setTimeout(() => {
                     this.hideAR();
-                }, 5000); // AR will be shown for 5 seconds
+                }, 5000);
             }
 
             hideAR() {
@@ -998,7 +950,6 @@
                     }).catch(error => this.log('Share failed:', error));
                 } else {
                     this.log('Web Share API is not supported.');
-                    // Fallback for browsers that do not support the Web Share API
                     this.showError(`このブラウザは共有機能をサポートしていません。以下のテキストをコピーして共有してください：\n${shareText}`);
                 }
             }
@@ -1012,7 +963,6 @@
             }
         }
 
-        // Initialize the app when the DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             const app = new ARStampRally();
         });
