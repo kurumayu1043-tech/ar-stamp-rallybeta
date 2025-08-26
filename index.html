@@ -265,7 +265,7 @@
             <a-asset-item id="crystal-stone-model" src="https://cdn.aframe.io/examples/gltf-model/crystal-stone/crystal_stone_rock.glb"></a-asset-item>
         </a-assets>
 
-        <!-- 3Dモデルをカメラの手前（画面中央）に静的に配置 -->
+        <!-- A-Frameカメラの視点からモデルを2メートル手前に配置することで、画面中央に常に表示されます -->
         <a-entity gltf-model="#crystal-stone-model" position="0 0 -2" scale="0.1 0.1 0.1" rotation="0 0 0">
             <!-- モデルにシンプルなアニメーションを追加して、よりインタラクティブに -->
             <a-animation attribute="rotation"
