@@ -8,8 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <!-- A-FrameライブラリをCDNから読み込み -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <!-- AR.jsライブラリをCDNから読み込み -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         /* Base styles */
         * {
@@ -211,20 +209,6 @@
             z-index: 100;
         }
         
-        #ar-message {
-            position: fixed;
-            top: 20%;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            text-align: center;
-            padding: 15px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            z-index: 101; /* メッセージをARシーンの上に表示 */
-            max-width: 80%;
-        }
-        
         /* ログコンソール */
         #log-console {
             position: fixed;
@@ -274,15 +258,14 @@
     </div>
     
     <!-- ARシーンをアプリの表示とは別に管理 -->
-    <!-- AR.jsのマーカー認識を無効化し、デバッグUIを有効にする -->
-    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; detectionMode: mono_and_stereo; debugUIEnabled: true;">
+    <!-- AR.jsを削除し、純粋なA-Frameシーンとしてモデルを中央に配置 -->
+    <a-scene id="ar-scene" embedded>
         <a-assets>
             <!-- ユーザーの要望に合わせて3Dモデルをcrystal_stone_rock.glbに変更 -->
             <a-asset-item id="crystal-stone-model" src="https://cdn.aframe.io/examples/gltf-model/crystal-stone/crystal_stone_rock.glb"></a-asset-item>
         </a-assets>
 
-        <!-- マーカーに依存しないAR表示に変更 -->
-        <!-- a-entityをa-sceneに直接配置することで、常にモデルを表示 -->
+        <!-- 3Dモデルをカメラの手前（画面中央）に静的に配置 -->
         <a-entity gltf-model="#crystal-stone-model" position="0 0 -2" scale="0.1 0.1 0.1" rotation="0 0 0">
             <!-- モデルにシンプルなアニメーションを追加して、よりインタラクティブに -->
             <a-animation attribute="rotation"
@@ -293,12 +276,10 @@
                          easing="linear"></a-animation>
         </a-entity>
 
-        <!-- AR.jsのカメラは自動で追加されるため、手動で追加する必要はありません -->
+        <!-- A-Frameのデフォルトカメラを使用 -->
+        <a-camera></a-camera>
     </a-scene>
     
-    <!-- AR表示中に表示するメッセージ（今回は不要のため削除） -->
-    <!-- <div id="ar-message" style="display:none;"></div> -->
-
     <!-- 戻るボタン -->
     <button id="back-button" aria-label="戻る" style="display: none;">&#8592;</button>
     <button id="ar-back-button" aria-label="戻る" style="display: none;">&#8592;</button>
@@ -519,11 +500,7 @@
             stopAR() {
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
-                    // AR.jsのカメラを停止
-                    const ar = arScene.components['arjs'];
-                    if (ar) {
-                         ar.pause();
-                    }
+                    arScene.pause(); // A-Frameシーンを一時停止
                     arScene.style.display = 'none'; // ARシーンを非表示にする
                     log('AR scene paused.');
                 }
@@ -536,15 +513,7 @@
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
                     arScene.style.display = 'block'; // ARシーンを表示する
-                    // A-Frameのシステムを再開
-                    arScene.play();
-                    
-                    // AR.jsのコンポーネントを再初期化
-                    const ar = arScene.components['arjs'];
-                    if (ar) {
-                        ar.play();
-                    }
-                    
+                    arScene.play(); // A-Frameシーンを再開
                     log('AR scene started.');
                 }
             },
@@ -622,12 +591,6 @@
                 if (!arScene) {
                     log('AR scene element not found.');
                     return;
-                }
-                
-                // AR表示のメッセージは不要になるため削除
-                const arMessage = document.getElementById('ar-message');
-                if (arMessage) {
-                    arMessage.style.display = 'none';
                 }
                 
                 // 画面をARシーンに切り替え
