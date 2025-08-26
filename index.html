@@ -274,25 +274,30 @@
     </div>
     
     <!-- ARシーンをアプリの表示とは別に管理 -->
-    <!-- マーカー認識を有効にし、デバッグUIを有効にする -->
-    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: true;">
+    <!-- AR.jsのマーカー認識を無効化し、デバッグUIを有効にする -->
+    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; detectionMode: mono_and_stereo; debugUIEnabled: true;">
         <a-assets>
-            <!-- AR.jsのHiroマーカー用パターン -->
-            <a-asset-item id="hiro-marker-pattern" src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/examples/assets/patt/hiro.patt"></a-asset-item>
             <!-- ユーザーの要望に合わせて3Dモデルをcrystal_stone_rock.glbに変更 -->
             <a-asset-item id="crystal-stone-model" src="https://cdn.aframe.io/examples/gltf-model/crystal-stone/crystal_stone_rock.glb"></a-asset-item>
         </a-assets>
 
-        <!-- マーカーに連動するモデル -->
-        <a-marker type="pattern" url="#hiro-marker-pattern">
-            <a-entity gltf-model="#crystal-stone-model" position="0 0 0" scale="0.1 0.1 0.1" rotation="0 0 0"></a-entity>
-        </a-marker>
+        <!-- マーカーに依存しないAR表示に変更 -->
+        <!-- a-entityをa-sceneに直接配置することで、常にモデルを表示 -->
+        <a-entity gltf-model="#crystal-stone-model" position="0 0 -2" scale="0.1 0.1 0.1" rotation="0 0 0">
+            <!-- モデルにシンプルなアニメーションを追加して、よりインタラクティブに -->
+            <a-animation attribute="rotation"
+                         dur="5000"
+                         from="0 0 0"
+                         to="0 360 0"
+                         repeat="indefinite"
+                         easing="linear"></a-animation>
+        </a-entity>
 
-        <a-camera></a-camera>
+        <!-- AR.jsのカメラは自動で追加されるため、手動で追加する必要はありません -->
     </a-scene>
     
-    <!-- AR表示中に表示するメッセージ -->
-    <div id="ar-message" style="display:none;"></div>
+    <!-- AR表示中に表示するメッセージ（今回は不要のため削除） -->
+    <!-- <div id="ar-message" style="display:none;"></div> -->
 
     <!-- 戻るボタン -->
     <button id="back-button" aria-label="戻る" style="display: none;">&#8592;</button>
@@ -619,22 +624,14 @@
                     return;
                 }
                 
-                // AR表示のメッセージを更新
+                // AR表示のメッセージは不要になるため削除
                 const arMessage = document.getElementById('ar-message');
-                arMessage.style.display = 'block';
-                arMessage.innerHTML = `
-                    <h3>${this.stamps[stampType].name}のARを表示中</h3>
-                    <p>カメラを<a href="https://ar-js-org.github.io/AR.js/data/images/hiro.png" target="_blank" style="color: yellow; text-decoration: underline;">このHiroマーカー</a>に向けてください。<br>
-                    別のデバイスに表示するか、印刷してご使用ください。</p>
-                `;
+                if (arMessage) {
+                    arMessage.style.display = 'none';
+                }
                 
                 // 画面をARシーンに切り替え
                 this.showScreen('ar');
-
-                // 10秒後にメッセージを非表示にする
-                setTimeout(() => {
-                    arMessage.style.display = 'none';
-                }, 10000);
             }
         };
         
