@@ -207,6 +207,8 @@
             width: 100% !important;
             height: 100% !important;
             z-index: 100;
+            /* 背景を透過させ、カメラ映像を下に表示 */
+            background-color: transparent !important;
         }
         
         /* ログコンソール */
@@ -398,7 +400,6 @@
                     scannerScreen.style.display = 'flex';
                     backButton.style.display = 'block';
                     this.startScanner();
-                    this.stopAR();
                     log('Switched to scanner screen');
                 } else if (screenId === 'stamps') {
                     stampScreen.style.display = 'block';
@@ -408,10 +409,14 @@
                     this.stopAR();
                     log('Switched to stamps screen');
                 } else if (screenId === 'ar') {
+                    // ARモードでは、カメラ映像を背景として使用するためscanner-screenは表示したまま
+                    scannerScreen.style.display = 'flex';
                     arScene.style.display = 'block';
                     arBackButton.style.display = 'block';
-                    this.stopScanner();
-                    this.startAR();
+                    
+                    // スキャン中のメッセージを非表示にする
+                    document.getElementById('scan-message').style.display = 'none';
+                    document.getElementById('loading-indicator').style.display = 'none';
                     log('Switched to AR screen');
                 }
             },
@@ -426,6 +431,7 @@
                 
                 loadingIndicator.style.display = 'block';
                 scanMessage.textContent = 'カメラを起動中...';
+                scanMessage.style.display = 'block';
 
                 // 背面カメラを優先的に使用
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -507,35 +513,21 @@
             },
 
             /**
-             * ARシーンを開始
-             */
-            startAR() {
-                const arScene = document.getElementById('ar-scene');
-                if (arScene) {
-                    arScene.style.display = 'block'; // ARシーンを表示する
-                    arScene.play(); // A-Frameシーンを再開
-                    log('AR scene started.');
-                }
-            },
-
-            /**
              * QRコードデータの処理
              * @param {string} qrData - QRコードから読み取ったデータ
              */
             handleQRCode(qrData) {
-                // スキャン成功後、スキャナーを停止
-                this.stopScanner();
-                
+                // カメラは停止せず、ARシーンに切り替える
                 const urlParams = new URLSearchParams(qrData.split('?')[1]);
                 const stampType = urlParams.get('stamp');
                 if (stampType && this.stamps[stampType]) {
                     if (!this.stamps[stampType].collected) {
                         this.collectStamp(stampType);
-                        this.showAR(stampType);
+                        this.showScreen('ar'); // showARを直接呼び出す
                         log(`New stamp collected: ${stampType}`);
                     } else {
                         log(`Stamp already collected: ${stampType}`);
-                        this.showAR(stampType);
+                        this.showScreen('ar');
                     }
                 } else {
                     log('Invalid QR code or stamp type.');
@@ -573,28 +565,13 @@
                     `;
                     item.addEventListener('click', () => {
                         if (stamp.collected) {
-                            this.showAR(key);
+                            this.showScreen('ar');
                         } else {
                             log('未取得のスタンプです。');
                         }
                     });
                     stampGrid.appendChild(item);
                 });
-            },
-
-            /**
-             * ARコンテンツの表示
-             * @param {string} stampType - 表示するスタンプのタイプ
-             */
-            showAR(stampType) {
-                const arScene = document.getElementById('ar-scene');
-                if (!arScene) {
-                    log('AR scene element not found.');
-                    return;
-                }
-                
-                // 画面をARシーンに切り替え
-                this.showScreen('ar');
             }
         };
         
@@ -610,7 +587,7 @@
                 const stamps = ['entrance', 'stage', 'food', 'game', 'art', 'special'];
                 const stampType = stamps[parseInt(e.key) - 1];
                 app.collectStamp(stampType);
-                app.showAR(stampType);
+                app.showScreen('ar');
                 app.log(`Debug: Added stamp ${stampType}`);
             }
             
