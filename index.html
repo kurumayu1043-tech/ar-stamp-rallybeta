@@ -454,8 +454,16 @@
                 scanMessage.textContent = 'カメラを起動中...';
                 scanMessage.style.display = 'block';
 
-                // 背面カメラを優先的に使用
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                // カメラアクセスの制約を緩和
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' }, // 理想的に背面カメラを使用
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                navigator.mediaDevices.getUserMedia(constraints)
                     .then(stream => {
                         video.srcObject = stream;
                         video.setAttribute("playsinline", true);
@@ -470,8 +478,46 @@
                     })
                     .catch(err => {
                         log(`Error accessing camera: ${err}`);
-                        scanMessage.textContent = 'カメラの起動に失敗しました。カメラへのアクセスを許可してください。';
-                        loadingIndicator.style.display = 'none';
+                        // フォールバック: フロントカメラを試す
+                        const fallbackConstraints = {
+                            video: {
+                                facingMode: 'user', // フロントカメラ
+                                width: { ideal: 640 },
+                                height: { ideal: 480 }
+                            }
+                        };
+                        
+                        navigator.mediaDevices.getUserMedia(fallbackConstraints)
+                            .then(stream => {
+                                video.srcObject = stream;
+                                video.setAttribute("playsinline", true);
+                                video.play();
+                                
+                                video.onloadedmetadata = () => {
+                                    loadingIndicator.style.display = 'none';
+                                    scanMessage.textContent = 'QRコードをスキャンしてください（フロントカメラ使用中）';
+                                    this.scanLoop(video);
+                                    log('Fallback: Front camera access granted.');
+                                };
+                            })
+                            .catch(fallbackErr => {
+                                log(`Fallback camera access failed: ${fallbackErr}`);
+                                scanMessage.innerHTML = `
+                                    <div style="text-align: center; padding: 20px;">
+                                        <p>カメラへのアクセスが拒否されました。</p>
+                                        <p style="margin-top: 10px; font-size: 0.9rem;">
+                                            ブラウザの設定でカメラの使用を許可してください。
+                                        </p>
+                                        <button onclick="location.reload()" 
+                                                style="margin-top: 15px; padding: 8px 16px; 
+                                                       background: #ff5e62; color: white; 
+                                                       border: none; border-radius: 5px; cursor: pointer;">
+                                            再試行
+                                        </button>
+                                    </div>
+                                `;
+                                loadingIndicator.style.display = 'none';
+                            });
                     });
             },
 
@@ -483,8 +529,6 @@
                 if (this.currentScreen !== 'scanner') return;
 
                 const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
                 const context = canvas.getContext('2d', { willReadFrequently: true });
                 
                 const tick = () => {
@@ -492,6 +536,10 @@
                         requestAnimationFrame(tick);
                         return;
                     }
+                    
+                    // キャンバスのサイズをビデオのサイズに合わせる
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
                     
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -502,9 +550,12 @@
                     if (code) {
                         log(`QR Code detected: ${code.data}`);
                         this.handleQRCode(code.data);
-                    } else {
-                        requestAnimationFrame(tick);
+                        // QRコードが検出されてもスキャンを継続しない（AR画面に移行するため）
+                        return;
                     }
+                    
+                    // QRコードが検出されなかった場合は継続してスキャン
+                    requestAnimationFrame(tick);
                 };
                 requestAnimationFrame(tick);
             },
@@ -527,9 +578,16 @@
             stopAR() {
                 const arScene = document.getElementById('ar-scene');
                 if (arScene) {
-                    arScene.pause(); // A-Frameシーンを一時停止
+                    // A-Frameシーンの適切な停止方法
+                    try {
+                        if (arScene.pause && typeof arScene.pause === 'function') {
+                            arScene.pause();
+                        }
+                    } catch (e) {
+                        log('AR scene pause not supported, using display none');
+                    }
                     arScene.style.display = 'none'; // ARシーンを非表示にする
-                    log('AR scene paused.');
+                    log('AR scene stopped.');
                 }
             },
 
@@ -538,21 +596,50 @@
              * @param {string} qrData - QRコードから読み取ったデータ
              */
             handleQRCode(qrData) {
-                // カメラは停止せず、ARシーンに切り替える
-                const urlParams = new URLSearchParams(qrData.split('?')[1]);
-                const stampType = urlParams.get('stamp');
+                log(`Processing QR data: ${qrData}`);
+                
+                // QRコードのデータからスタンプタイプを抽出
+                let stampType = null;
+                
+                // URL形式の場合（例: https://example.com/?stamp=entrance）
+                try {
+                    if (qrData.includes('?')) {
+                        const urlParams = new URLSearchParams(qrData.split('?')[1]);
+                        stampType = urlParams.get('stamp');
+                    } else if (qrData.includes('stamp=')) {
+                        // 直接stamp=entrance形式の場合
+                        stampType = qrData.split('stamp=')[1].split('&')[0];
+                    } else {
+                        // 直接スタンプタイプが書かれている場合（entrance, stage, food, etc.）
+                        const directTypes = Object.keys(this.stamps);
+                        if (directTypes.includes(qrData.toLowerCase())) {
+                            stampType = qrData.toLowerCase();
+                        }
+                    }
+                } catch (e) {
+                    log(`Error parsing QR data: ${e}`);
+                }
+                
+                log(`Extracted stamp type: ${stampType}`);
+                
                 if (stampType && this.stamps[stampType]) {
                     if (!this.stamps[stampType].collected) {
                         this.collectStamp(stampType);
-                        this.showScreen('ar'); // showARを直接呼び出す
-                        log(`New stamp collected: ${stampType}`);
+                        log(`New stamp collected: ${stampType} (${this.stamps[stampType].name})`);
                     } else {
-                        log(`Stamp already collected: ${stampType}`);
-                        this.showScreen('ar');
+                        log(`Stamp already collected: ${stampType} (${this.stamps[stampType].name})`);
                     }
+                    // 新しいスタンプでも既存のスタンプでもAR表示
+                    this.showScreen('ar');
                 } else {
-                    log('Invalid QR code or stamp type.');
-                    this.showScreen('scanner');
+                    log(`Invalid QR code or stamp type: ${qrData}`);
+                    // 無効なQRコードの場合はスキャン画面に戻る
+                    document.getElementById('scan-message').textContent = '無効なQRコードです。正しいQRコードをスキャンしてください。';
+                    setTimeout(() => {
+                        if (this.currentScreen === 'scanner') {
+                            document.getElementById('scan-message').textContent = 'QRコードをスキャンしてください';
+                        }
+                    }, 3000);
                 }
             },
 
@@ -617,32 +704,7 @@
                 e.preventDefault();
                 app.log('Space key test - simulating QR detection');
                 // テスト用のダミーURLに変更
-                app.handleQRCode('https://example.com/?stamp=entrance');
-            }
-        });
-        
-        // タッチ操作でのテスト（モバイル用）
-        let touchCount = 0;
-        let touchTimer = null;
-        
-        document.addEventListener('touchstart', (e) => {
-            if (app && app.currentScreen === 'scanner') {
-                touchCount++;
-                
-                if (touchTimer) clearTimeout(touchTimer);
-                
-                // 3回連続タップでテストQRコード認識
-                if (touchCount >= 3) {
-                    app.log('Triple tap detected - simulating QR detection');
-                    // テスト用のダミーURLに変更
-                    app.handleQRCode('https://example.com/?stamp=entrance');
-                    touchCount = 0;
-                    return;
-                }
-                
-                touchTimer = setTimeout(() => {
-                    touchCount = 0;
-                }, 1000);
+                app.handleQRCode('entrance');
             }
         });
     </script>
