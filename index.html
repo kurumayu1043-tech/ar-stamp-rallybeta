@@ -263,35 +263,22 @@
     <!-- 2D画像を表示するA-Frameシーン -->
     <a-scene id="ar-scene" embedded>
         <a-assets>
-            <!-- マスコットキャラクターの画像 -->
+            <!-- マスコットキャラクターの画像 (nisyama1.png) -->
             <img id="mascot-image" src="./nisyama1.png" crossorigin="anonymous">
         </a-assets>
 
         <!-- 2D画像をカメラの前に配置（ビルボード効果で常にカメラの方を向く） -->
+        <!-- A-Frame 1.4.0の新しいアニメーションAPIを使用 -->
         <a-image 
+            id="mascot-ar-image"
             src="#mascot-image" 
-            position="0 0 -2" 
-            scale="2 2 1" 
+            position="0 0 -3" 
+            scale="3 3 1" 
             look-at="[camera]"
             transparent="true"
-            shader="msdf">
-            <!-- 画像に楽しいアニメーションを追加 -->
-            <a-animation 
-                attribute="position"
-                dur="2000"
-                from="0 -1 -2"
-                to="0 0.5 -2"
-                repeat="indefinite"
-                direction="alternate"
-                easing="ease-in-out-sine"></a-animation>
-            <a-animation 
-                attribute="rotation"
-                dur="4000"
-                from="0 0 -10"
-                to="0 0 10"
-                repeat="indefinite"
-                direction="alternate"
-                easing="ease-in-out-sine"></a-animation>
+            animation__position="property: position; from: 0 -1 -3; to: 0 0.5 -3; dur: 2000; easing: easeInOutSine; loop: true; dir: alternate"
+            animation__rotation="property: rotation; from: 0 0 -10; to: 0 0 10; dur: 4000; easing: easeInOutSine; loop: true; dir: alternate"
+            animation__scale="property: scale; from: 3 3 1; to: 3.5 3.5 1; dur: 1500; easing: easeInOutSine; loop: true; dir: alternate">
         </a-image>
 
         <!-- A-Frameのデフォルトカメラを使用 -->
@@ -340,7 +327,7 @@
                 this.setupEventListeners();
                 this.renderStamps();
                 this.showScreen('start');
-                log('AR Stamp Rally initialized');
+                log('AR Stamp Rally initialized with nisyama1.png as mascot');
             },
 
             /**
@@ -438,7 +425,16 @@
                     // スキャン中のメッセージを非表示にする
                     document.getElementById('scan-message').style.display = 'none';
                     document.getElementById('loading-indicator').style.display = 'none';
-                    log('Switched to AR screen with mascot character');
+                    
+                    // ARシーンを再生
+                    if (arScene.play && typeof arScene.play === 'function') {
+                        arScene.play();
+                    }
+                    
+                    // スタンプ獲得エフェクトを表示
+                    this.showStampEffect();
+                    
+                    log('Switched to AR screen with mascot character (nisyama1.png)');
                 }
             },
 
@@ -587,6 +583,15 @@
                         log('AR scene pause not supported, using display none');
                     }
                     arScene.style.display = 'none'; // ARシーンを非表示にする
+                    
+                    // ARイメージのアニメーションをリセット
+                    const mascotImage = document.getElementById('mascot-ar-image');
+                    if (mascotImage) {
+                        mascotImage.setAttribute('position', '0 0 -3');
+                        mascotImage.setAttribute('scale', '3 3 1');
+                        mascotImage.setAttribute('rotation', '0 0 0');
+                    }
+                    
                     log('AR scene stopped.');
                 }
             },
@@ -653,6 +658,65 @@
                     this.saveStamps();
                     this.renderStamps();
                 }
+            },
+
+            /**
+             * スタンプ獲得エフェクトを表示
+             */
+            showStampEffect() {
+                // スタンプ獲得メッセージを表示
+                const effectDiv = document.createElement('div');
+                effectDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(255, 255, 255, 0.9);
+                    padding: 20px 40px;
+                    border-radius: 20px;
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                    color: #ff5e62;
+                    z-index: 200;
+                    animation: stampGetEffect 2s ease-out;
+                    pointer-events: none;
+                `;
+                effectDiv.textContent = 'スタンプGET！';
+                
+                // アニメーションのスタイルを追加
+                if (!document.getElementById('stamp-effect-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'stamp-effect-style';
+                    style.textContent = `
+                        @keyframes stampGetEffect {
+                            0% { 
+                                opacity: 0;
+                                transform: translate(-50%, -50%) scale(0.5);
+                            }
+                            50% { 
+                                opacity: 1;
+                                transform: translate(-50%, -50%) scale(1.2);
+                            }
+                            100% { 
+                                opacity: 0;
+                                transform: translate(-50%, -50%) scale(1);
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                document.body.appendChild(effectDiv);
+                
+                // 2秒後に削除
+                setTimeout(() => {
+                    effectDiv.remove();
+                    // 3秒後にスタンプ一覧画面に自動遷移
+                    setTimeout(() => {
+                        this.stopAR();
+                        this.showScreen('stamps');
+                    }, 1000);
+                }, 2000);
             },
 
             /**
