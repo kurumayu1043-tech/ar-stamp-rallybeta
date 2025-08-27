@@ -260,23 +260,39 @@
     </div>
     
     <!-- ARシーンをアプリの表示とは別に管理 -->
-    <!-- AR.jsを削除し、純粋なA-Frameシーンとしてモデルを中央に配置 -->
+    <!-- 2D画像を表示するA-Frameシーン -->
     <a-scene id="ar-scene" embedded>
         <a-assets>
-            <!-- ユーザーの要望に合わせて3Dモデルをcrystal_stone_rock.glbに変更 -->
-            <a-asset-item id="crystal-stone-model" src="https://cdn.aframe.io/examples/gltf-model/crystal-stone/crystal_stone_rock.glb"></a-asset-item>
+            <!-- マスコットキャラクターの画像 -->
+            <img id="mascot-image" src="./nisyama1.png" crossorigin="anonymous">
         </a-assets>
 
-        <!-- A-Frameカメラの視点からモデルを2メートル手前に配置することで、画面中央に常に表示されます -->
-        <a-entity gltf-model="#crystal-stone-model" position="0 0 -2" scale="0.1 0.1 0.1" rotation="0 0 0">
-            <!-- モデルにシンプルなアニメーションを追加して、よりインタラクティブに -->
-            <a-animation attribute="rotation"
-                         dur="5000"
-                         from="0 0 0"
-                         to="0 360 0"
-                         repeat="indefinite"
-                         easing="linear"></a-animation>
-        </a-entity>
+        <!-- 2D画像をカメラの前に配置（ビルボード効果で常にカメラの方を向く） -->
+        <a-image 
+            src="#mascot-image" 
+            position="0 0 -2" 
+            scale="2 2 1" 
+            look-at="[camera]"
+            transparent="true"
+            shader="msdf">
+            <!-- 画像に楽しいアニメーションを追加 -->
+            <a-animation 
+                attribute="position"
+                dur="2000"
+                from="0 -1 -2"
+                to="0 0.5 -2"
+                repeat="indefinite"
+                direction="alternate"
+                easing="ease-in-out-sine"></a-animation>
+            <a-animation 
+                attribute="rotation"
+                dur="4000"
+                from="0 0 -10"
+                to="0 0 10"
+                repeat="indefinite"
+                direction="alternate"
+                easing="ease-in-out-sine"></a-animation>
+        </a-image>
 
         <!-- A-Frameのデフォルトカメラを使用 -->
         <a-camera></a-camera>
@@ -329,11 +345,12 @@
 
             /**
              * localStorageからスタンプデータをロード
+             * 注意: Claude.ai環境では動作しませんが、実際のサイトでは機能します
              */
             loadStamps() {
-                const savedStamps = localStorage.getItem('arStamps');
-                if (savedStamps) {
-                    try {
+                try {
+                    const savedStamps = localStorage.getItem('arStamps');
+                    if (savedStamps) {
                         const parsedStamps = JSON.parse(savedStamps);
                         Object.keys(this.stamps).forEach(key => {
                             if (parsedStamps[key]) {
@@ -341,18 +358,22 @@
                             }
                         });
                         log('Stamps loaded from localStorage');
-                    } catch (e) {
-                        log('Error parsing localStorage data, resetting stamps.');
-                        localStorage.removeItem('arStamps');
                     }
+                } catch (e) {
+                    log('localStorage not available, using memory storage');
                 }
             },
 
             /**
              * localStorageにスタンプデータを保存
+             * 注意: Claude.ai環境では動作しませんが、実際のサイトでは機能します
              */
             saveStamps() {
-                localStorage.setItem('arStamps', JSON.stringify(this.stamps));
+                try {
+                    localStorage.setItem('arStamps', JSON.stringify(this.stamps));
+                } catch (e) {
+                    log('localStorage not available');
+                }
             },
 
             /**
@@ -417,7 +438,7 @@
                     // スキャン中のメッセージを非表示にする
                     document.getElementById('scan-message').style.display = 'none';
                     document.getElementById('loading-indicator').style.display = 'none';
-                    log('Switched to AR screen');
+                    log('Switched to AR screen with mascot character');
                 }
             },
 
