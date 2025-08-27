@@ -3,181 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スタンプラリー動作確認</title>
+    <title>ARスタンプラリー デバッグツール</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
-            background: #f5f5f5;
             margin: 0;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         h1 {
             color: #333;
+            margin-bottom: 30px;
             text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
         .section {
-            background: white;
+            margin-bottom: 30px;
             padding: 20px;
-            margin: 20px 0;
+            background: #f8f9fa;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 5px solid #007bff;
         }
         h2 {
-            color: #666;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+            color: #007bff;
+            margin-top: 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        pre {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
         }
         .stamp-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 15px;
-            margin: 20px 0;
+            margin-top: 15px;
         }
         .stamp-card {
-            background: #f9f9f9;
-            border: 2px solid #ddd;
-            border-radius: 8px;
             padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
             text-align: center;
-            transition: all 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stamp-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         .stamp-card.collected {
-            background: #e8f5e9;
-            border-color: #4caf50;
+            background: #d4edda;
+            border-color: #28a745;
         }
-        .stamp-card h3 {
-            margin: 10px 0;
-            color: #333;
+        .stamp-card .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
         }
-        .stamp-status {
-            font-size: 2rem;
-            margin: 10px 0;
+        .stamp-card .name {
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-        button {
-            background: #764ba2;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-            font-size: 16px;
+        .stamp-card .status {
+            font-size: 0.9em;
+            color: #666;
         }
-        button:hover {
-            background: #5a3882;
-        }
-        .test-button {
-            background: #667eea;
-        }
-        .test-button:hover {
-            background: #5568c8;
-        }
-        .clear-button {
-            background: #f44336;
-        }
-        .clear-button:hover {
-            background: #d32f2f;
-        }
-        .log-area {
-            background: #2b2b2b;
-            color: #0f0;
-            font-family: monospace;
+        .log {
+            background: #f8f9fa;
             padding: 15px;
+            border: 1px solid #dee2e6;
             border-radius: 5px;
             max-height: 300px;
             overflow-y: auto;
-            white-space: pre-wrap;
-            font-size: 12px;
-        }
-        .data-display {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 5px;
             font-family: monospace;
-            white-space: pre-wrap;
-            max-height: 400px;
-            overflow-y: auto;
+            font-size: 0.9em;
         }
-        .url-display {
-            background: #e3f2fd;
-            padding: 10px;
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+        .test-link {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 5px;
+            background: #17a2b8;
+            color: white;
+            text-decoration: none;
             border-radius: 5px;
-            margin: 10px 0;
-            word-break: break-all;
+            transition: background 0.3s;
         }
-        .success {
-            color: #4caf50;
-            font-weight: bold;
-        }
-        .error {
-            color: #f44336;
-            font-weight: bold;
-        }
-        .warning {
-            color: #ff9800;
-            font-weight: bold;
+        .test-link:hover {
+            background: #138496;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎪 ARスタンプラリー 動作確認ツール</h1>
+        <h1>🔧 ARスタンプラリー デバッグツール</h1>
         
         <div class="section">
-            <h2>📊 現在のスタンプ収集状況</h2>
-            <div id="stamp-grid" class="stamp-grid"></div>
-            <div style="text-align: center; margin-top: 20px;">
-                <button onclick="refreshStatus()">🔄 状態を更新</button>
-                <button onclick="clearAllStamps()" class="clear-button">🗑️ すべてクリア</button>
+            <h2>📊 現在の状態</h2>
+            <div id="current-state">
+                <p>読み込み中...</p>
+            </div>
+            <button onclick="refreshState()">🔄 状態を更新</button>
+        </div>
+
+        <div class="section">
+            <h2>📱 スタンプコレクション</h2>
+            <div class="stamp-grid" id="stamp-grid">
+                <!-- スタンプが表示される -->
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="success" onclick="collectAllStamps()">✅ 全スタンプ収集</button>
+                <button class="danger" onclick="clearAllStamps()">❌ 全スタンプクリア</button>
             </div>
         </div>
-        
+
         <div class="section">
-            <h2>🧪 QRコードシミュレーター</h2>
-            <p>実際のQRコードを読み取った時と同じ動作をテストできます</p>
-            <div class="stamp-grid">
-                <button class="test-button" onclick="testStamp('entrance')">入場口 QR</button>
-                <button class="test-button" onclick="testStamp('ticket')">金券売り場 QR</button>
-                <button class="test-button" onclick="testStamp('stage')">ステージ前 QR</button>
-                <button class="test-button" onclick="testStamp('bunmi1')">文実模擬店１ QR</button>
-                <button class="test-button" onclick="testStamp('bunmi2')">文実模擬店２ QR</button>
-                <button class="test-button" onclick="testStamp('yamato')">庭大和 QR</button>
-                <button class="test-button" onclick="testStamp('rhythm')">リズム館 QR</button>
-                <button class="test-button" onclick="testStamp('gym')">体育館 QR</button>
+            <h2>🔗 テストリンク</h2>
+            <p>以下のリンクをクリックして、各スタンプのcollect.htmlページをテストできます：</p>
+            <div id="test-links">
+                <!-- テストリンクが表示される -->
             </div>
         </div>
-        
+
         <div class="section">
-            <h2>🔍 データ確認</h2>
-            <button onclick="showStorageData()">localStorage データを表示</button>
-            <button onclick="showSessionData()">sessionStorage データを表示</button>
-            <button onclick="exportData()">データをエクスポート</button>
-            <button onclick="importData()">データをインポート</button>
-            <div id="data-display" class="data-display" style="margin-top: 15px; display: none;"></div>
+            <h2>💾 localStorage詳細</h2>
+            <pre id="storage-details">データなし</pre>
+            <button onclick="exportData()">📥 データエクスポート</button>
+            <button onclick="importData()">📤 データインポート</button>
+            <button class="danger" onclick="clearStorage()">🗑️ localStorage削除</button>
         </div>
-        
+
         <div class="section">
-            <h2>📝 動作ログ</h2>
-            <div id="log" class="log-area"></div>
-            <button onclick="clearLog()">ログをクリア</button>
-        </div>
-        
-        <div class="section">
-            <h2>🔗 ページリンク</h2>
-            <button onclick="window.open('index.html', '_blank')">メインページを開く</button>
-            <button onclick="window.open('qr-generator.html', '_blank')">QRコード生成ツール</button>
-            <button onclick="window.open('test-stamps.html', '_blank')">旧テストツール</button>
+            <h2>📝 ログ</h2>
+            <div class="log" id="log-container">
+                <!-- ログが表示される -->
+            </div>
+            <button onclick="clearLog()">ログクリア</button>
         </div>
     </div>
-    
+
     <script>
+        // スタンプデータ
         const stampData = {
             entrance: { name: '入場口', icon: '🏛️' },
             ticket: { name: '金券売り場', icon: '🎫' },
@@ -188,156 +199,137 @@
             rhythm: { name: 'リズム館', icon: '🎵' },
             gym: { name: '体育館', icon: '🏐' }
         };
-        
-        function log(message, type = 'info') {
-            const logDiv = document.getElementById('log');
-            const timestamp = new Date().toLocaleTimeString('ja-JP', { hour12: false });
-            const typeClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
-            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
-            
-            const logEntry = document.createElement('div');
-            logEntry.className = typeClass;
-            logEntry.textContent = `[${timestamp}] ${prefix} ${message}`;
-            logDiv.appendChild(logEntry);
-            logDiv.scrollTop = logDiv.scrollHeight;
+
+        // ログ機能
+        function addLog(message) {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
         }
-        
+
         function clearLog() {
-            document.getElementById('log').innerHTML = '';
-            log('ログをクリアしました');
+            document.getElementById('log-container').innerHTML = '';
+            addLog('ログをクリアしました');
         }
-        
-        function refreshStatus() {
+
+        // 状態を表示
+        function refreshState() {
+            const storage = localStorage.getItem('arStamps2024');
+            const stateDiv = document.getElementById('current-state');
+            
+            if (storage) {
+                const data = JSON.parse(storage);
+                const collectedCount = Object.keys(data).filter(key => data[key].collected).length;
+                const collectedStamps = Object.keys(data).filter(key => data[key].collected)
+                    .map(key => stampData[key] ? stampData[key].name : key);
+                
+                stateDiv.innerHTML = `
+                    <p><strong>収集済みスタンプ:</strong> ${collectedCount} / 8</p>
+                    <p><strong>収集したスタンプ:</strong> ${collectedStamps.join(', ') || 'なし'}</p>
+                    <p><strong>最終更新:</strong> ${new Date().toLocaleString()}</p>
+                `;
+            } else {
+                stateDiv.innerHTML = '<p>スタンプデータがありません</p>';
+            }
+            
+            updateStampGrid();
+            updateStorageDetails();
+            addLog('状態を更新しました');
+        }
+
+        // スタンプグリッドを更新
+        function updateStampGrid() {
             const grid = document.getElementById('stamp-grid');
+            const storage = localStorage.getItem('arStamps2024');
+            const collectedData = storage ? JSON.parse(storage) : {};
+            
             grid.innerHTML = '';
             
-            try {
-                const saved = localStorage.getItem('arStamps2024');
-                const stamps = saved ? JSON.parse(saved) : {};
-                let collectedCount = 0;
+            Object.keys(stampData).forEach(key => {
+                const stamp = stampData[key];
+                const isCollected = collectedData[key] && collectedData[key].collected;
                 
-                Object.keys(stampData).forEach(id => {
-                    const card = document.createElement('div');
-                    card.className = 'stamp-card';
-                    
-                    const isCollected = stamps[id] && stamps[id].collected;
-                    if (isCollected) {
-                        card.classList.add('collected');
-                        collectedCount++;
-                    }
-                    
-                    card.innerHTML = `
-                        <div class="stamp-status">${stampData[id].icon}</div>
-                        <h3>${stampData[id].name}</h3>
-                        <div>${isCollected ? '✅ 取得済み' : '❌ 未取得'}</div>
-                        ${isCollected ? `<button onclick="removeStamp('${id}')">削除</button>` : `<button onclick="addStamp('${id}')">追加</button>`}
-                    `;
-                    
-                    grid.appendChild(card);
-                });
-                
-                log(`スタンプ状態を更新: ${collectedCount}/8個取得`, 'success');
-            } catch (e) {
-                log(`エラー: ${e.message}`, 'error');
-            }
+                const card = document.createElement('div');
+                card.className = `stamp-card ${isCollected ? 'collected' : ''}`;
+                card.innerHTML = `
+                    <div class="icon">${stamp.icon}</div>
+                    <div class="name">${stamp.name}</div>
+                    <div class="status">${isCollected ? '✅ 収集済み' : '❌ 未収集'}</div>
+                `;
+                card.onclick = () => toggleStamp(key);
+                grid.appendChild(card);
+            });
         }
-        
-        function testStamp(stampId) {
-            const url = `collect.html?stamp=${stampId}`;
-            log(`QRコードテスト: ${stampData[stampId].name} (${url})`, 'warning');
+
+        // スタンプの収集状態を切り替え
+        function toggleStamp(stampId) {
+            const storage = JSON.parse(localStorage.getItem('arStamps2024') || '{}');
             
-            const win = window.open(url, '_blank');
-            if (win) {
-                log(`新しいタブで${stampData[stampId].name}のページを開きました`, 'success');
+            if (storage[stampId] && storage[stampId].collected) {
+                delete storage[stampId];
+                addLog(`${stampData[stampId].name}のスタンプを削除しました`);
             } else {
-                log('ポップアップがブロックされました。ブラウザの設定を確認してください', 'error');
+                storage[stampId] = { collected: true };
+                addLog(`${stampData[stampId].name}のスタンプを追加しました`);
             }
-        }
-        
-        function addStamp(stampId) {
-            try {
-                const saved = localStorage.getItem('arStamps2024');
-                const stamps = saved ? JSON.parse(saved) : {};
-                stamps[stampId] = { collected: true };
-                localStorage.setItem('arStamps2024', JSON.stringify(stamps));
-                log(`${stampData[stampId].name}を追加しました`, 'success');
-                refreshStatus();
-            } catch (e) {
-                log(`追加エラー: ${e.message}`, 'error');
-            }
-        }
-        
-        function removeStamp(stampId) {
-            try {
-                const saved = localStorage.getItem('arStamps2024');
-                const stamps = saved ? JSON.parse(saved) : {};
-                delete stamps[stampId];
-                localStorage.setItem('arStamps2024', JSON.stringify(stamps));
-                log(`${stampData[stampId].name}を削除しました`, 'warning');
-                refreshStatus();
-            } catch (e) {
-                log(`削除エラー: ${e.message}`, 'error');
-            }
-        }
-        
-        function clearAllStamps() {
-            if (confirm('本当にすべてのスタンプをクリアしますか？')) {
-                localStorage.removeItem('arStamps2024');
-                sessionStorage.clear();
-                log('すべてのデータをクリアしました', 'warning');
-                refreshStatus();
-            }
-        }
-        
-        function showStorageData() {
-            const display = document.getElementById('data-display');
-            const data = localStorage.getItem('arStamps2024');
-            display.style.display = 'block';
             
-            if (data) {
+            localStorage.setItem('arStamps2024', JSON.stringify(storage));
+            refreshState();
+        }
+
+        // 全スタンプ収集
+        function collectAllStamps() {
+            const storage = {};
+            Object.keys(stampData).forEach(key => {
+                storage[key] = { collected: true };
+            });
+            localStorage.setItem('arStamps2024', JSON.stringify(storage));
+            addLog('全スタンプを収集しました');
+            refreshState();
+        }
+
+        // 全スタンプクリア
+        function clearAllStamps() {
+            localStorage.setItem('arStamps2024', '{}');
+            addLog('全スタンプをクリアしました');
+            refreshState();
+        }
+
+        // localStorage詳細を表示
+        function updateStorageDetails() {
+            const storage = localStorage.getItem('arStamps2024');
+            const details = document.getElementById('storage-details');
+            
+            if (storage) {
                 try {
-                    const parsed = JSON.parse(data);
-                    display.textContent = 'localStorage (arStamps2024):\n' + JSON.stringify(parsed, null, 2);
-                    log('localStorageデータを表示しました');
+                    const data = JSON.parse(storage);
+                    details.textContent = JSON.stringify(data, null, 2);
                 } catch (e) {
-                    display.textContent = 'パースエラー: ' + e.message;
-                    log('データのパースに失敗しました', 'error');
+                    details.textContent = 'パースエラー: ' + storage;
                 }
             } else {
-                display.textContent = 'localStorageにデータがありません';
-                log('localStorageは空です', 'warning');
+                details.textContent = 'データなし';
             }
         }
-        
-        function showSessionData() {
-            const display = document.getElementById('data-display');
-            display.style.display = 'block';
-            
-            const pending = sessionStorage.getItem('pendingStamp');
-            if (pending) {
-                display.textContent = `sessionStorage:\npendingStamp: "${pending}"`;
-                log('sessionStorageデータを表示しました');
-            } else {
-                display.textContent = 'sessionStorageにデータがありません';
-                log('sessionStorageは空です', 'warning');
-            }
-        }
-        
+
+        // データエクスポート
         function exportData() {
-            const data = localStorage.getItem('arStamps2024');
-            if (data) {
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `stamps_${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                log('データをエクスポートしました', 'success');
-            } else {
-                log('エクスポートするデータがありません', 'warning');
-            }
+            const storage = localStorage.getItem('arStamps2024') || '{}';
+            const blob = new Blob([storage], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ar-stamps-backup.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog('データをエクスポートしました');
         }
-        
+
+        // データインポート
         function importData() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -346,15 +338,14 @@
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = (event) => {
+                    reader.onload = (e) => {
                         try {
-                            const data = event.target.result;
-                            JSON.parse(data); // Validate JSON
-                            localStorage.setItem('arStamps2024', data);
-                            log('データをインポートしました', 'success');
-                            refreshStatus();
+                            const data = JSON.parse(e.target.result);
+                            localStorage.setItem('arStamps2024', JSON.stringify(data));
+                            addLog('データをインポートしました');
+                            refreshState();
                         } catch (err) {
-                            log(`インポートエラー: ${err.message}`, 'error');
+                            addLog('インポートエラー: ' + err.message);
                         }
                     };
                     reader.readAsText(file);
@@ -362,20 +353,43 @@
             };
             input.click();
         }
-        
+
+        // localStorage削除
+        function clearStorage() {
+            if (confirm('本当にlocalStorageを削除しますか？')) {
+                localStorage.removeItem('arStamps2024');
+                addLog('localStorageを削除しました');
+                refreshState();
+            }
+        }
+
+        // テストリンクを生成
+        function generateTestLinks() {
+            const container = document.getElementById('test-links');
+            container.innerHTML = '';
+            
+            Object.keys(stampData).forEach(key => {
+                const stamp = stampData[key];
+                const link = document.createElement('a');
+                link.className = 'test-link';
+                link.href = `collect.html?stamp=${key}&debug=1`;
+                link.target = '_blank';
+                link.textContent = `${stamp.icon} ${stamp.name}`;
+                container.appendChild(link);
+            });
+        }
+
         // 初期化
         window.addEventListener('DOMContentLoaded', () => {
-            log('デバッグツール起動');
-            refreshStatus();
-            
-            // localStorageの変更を監視
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'arStamps2024') {
-                    log('他のタブでスタンプデータが変更されました', 'warning');
-                    refreshStatus();
-                }
-            });
+            addLog('デバッグツールを起動しました');
+            refreshState();
+            generateTestLinks();
         });
+
+        // 5秒ごとに自動更新
+        setInterval(() => {
+            refreshState();
+        }, 5000);
     </script>
 </body>
 </html>
