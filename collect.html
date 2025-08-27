@@ -227,6 +227,12 @@
                 スタンプ一覧へ
             </a>
         </div>
+        <!-- デバッグ情報 -->
+        <div style="margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 10px; font-size: 0.8rem; display: none;" id="debug-info">
+            <p>URL: <span id="debug-url"></span></p>
+            <p>スタンプID: <span id="debug-stamp-id"></span></p>
+            <p>localStorage: <span id="debug-storage"></span></p>
+        </div>
     </div>
 
     <!-- カメラビュー -->
@@ -313,13 +319,22 @@
 
         // 初期化
         function init() {
+            // デバッグ: 現在のURLを表示
+            console.log('現在のURL:', window.location.href);
+            console.log('URLパラメータ:', window.location.search);
+            
             // URLパラメータからスタンプIDを取得
             const urlParams = new URLSearchParams(window.location.search);
             const stampId = urlParams.get('stamp');
             
+            console.log('取得したスタンプID:', stampId);
+            console.log('利用可能なスタンプ:', Object.keys(stampData));
+            
             if (stampId && stampData[stampId]) {
                 currentStamp = stampId;
                 const stamp = stampData[stampId];
+                
+                console.log('スタンプ情報:', stamp);
                 
                 // UI更新
                 document.getElementById('stamp-title').textContent = stamp.name + 'のスタンプ';
@@ -339,6 +354,7 @@
                 }, 500);
             } else {
                 // 無効なスタンプの場合
+                console.log('無効なスタンプID:', stampId);
                 document.getElementById('stamp-title').textContent = '無効なQRコード';
                 document.getElementById('stamp-icon').textContent = '❌';
                 document.getElementById('stamp-description').textContent = '正しいQRコードをスキャンしてください。';
@@ -349,17 +365,24 @@
         // スタンプを保存
         function saveStamp(stampId) {
             try {
+                console.log('保存しようとしているスタンプID:', stampId);
+                
                 // 既存のスタンプデータを取得
                 const stamps = JSON.parse(localStorage.getItem('arStamps2024') || '{}');
+                console.log('現在のlocalStorageデータ:', stamps);
                 
                 // スタンプを記録
                 if (!stamps[stampId]) {
                     stamps[stampId] = { collected: true };
+                    console.log('新規スタンプを追加:', stampId);
+                } else {
+                    console.log('既存のスタンプ:', stampId);
                 }
                 
                 // 保存
                 localStorage.setItem('arStamps2024', JSON.stringify(stamps));
-                console.log('スタンプ保存:', stampId);
+                console.log('保存後のlocalStorageデータ:', stamps);
+                console.log('スタンプ保存完了:', stampId);
             } catch (e) {
                 console.error('スタンプ保存エラー:', e);
             }
@@ -438,8 +461,23 @@
             }
         }
 
+        // デバッグモード（URLに?debug=1が含まれている場合）
+        function checkDebugMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('debug') === '1') {
+                document.getElementById('debug-info').style.display = 'block';
+                document.getElementById('debug-url').textContent = window.location.href;
+                document.getElementById('debug-stamp-id').textContent = urlParams.get('stamp') || 'なし';
+                const storage = localStorage.getItem('arStamps2024');
+                document.getElementById('debug-storage').textContent = storage ? JSON.stringify(JSON.parse(storage)) : 'empty';
+            }
+        }
+        
         // 初期化実行
-        window.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('DOMContentLoaded', () => {
+            init();
+            checkDebugMode();
+        });
     </script>
 </body>
 </html>

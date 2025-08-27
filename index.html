@@ -573,14 +573,16 @@
              * アプリケーションの初期化
              */
             init() {
-                // 最初にlocalStorageからペンディングスタンプをチェック
-                this.checkPendingStamps();
+                // 最初にlocalStorageからスタンプを読み込み
+                this.loadStamps();
                 
-                // URLパラメータをチェックして処理
+                // URLパラメータをチェックして処理（index.htmlには通常stamp paramaeterが来ないはず）
                 this.processUrlParams();
                 
+                // localStorageからペンディングスタンプをチェック（旧stamp.htmlとの互換性）
+                this.checkPendingStamps();
+                
                 // その他の初期化処理
-                this.loadStamps();
                 this.setupEventListeners();
                 this.setupIOSInstall();
                 this.renderStamps();
@@ -649,39 +651,25 @@
                 const stampParam = urlParams.get('stamp');
                 
                 if (stampParam) {
-                    log(`URLパラメータ検出: stamp=${stampParam}`);
+                    // index.htmlにstampパラメータが来るのは通常ありえない
+                    // collect.htmlを使うべきなので、警告を出す
+                    log(`警告: index.htmlにstampパラメータが渡されました: stamp=${stampParam}`);
+                    log(`正しいURL: collect.html?stamp=${stampParam}`);
                     
-                    // スタンプパラメータをセッションストレージに保存
-                    if (this.stamps[stampParam]) {
-                        // セッションストレージに一時保存
-                        sessionStorage.setItem('pendingStamp', stampParam);
-                        this.pendingStamp = stampParam;
-                        
-                        // 新しいスタンプの場合は収集
-                        if (!this.stamps[stampParam].collected) {
-                            this.stamps[stampParam].collected = true;
-                            log(`新しいスタンプを獲得: ${this.stamps[stampParam].name}`);
-                        } else {
-                            log(`既に獲得済みのスタンプ: ${this.stamps[stampParam].name}`);
-                        }
-                        
-                        // URLをクリーンにする（パラメータを削除）
-                        const cleanUrl = window.location.origin + window.location.pathname;
-                        window.history.replaceState({}, document.title, cleanUrl);
-                        log('URLをクリーンに書き換えました');
-                    } else {
-                        log(`無効なスタンプパラメータ: ${stampParam}`);
-                        // 無効なパラメータも削除
-                        const cleanUrl = window.location.origin + window.location.pathname;
-                        window.history.replaceState({}, document.title, cleanUrl);
-                    }
-                } else {
-                    // セッションストレージからペンディングスタンプを復元
-                    const pendingStamp = sessionStorage.getItem('pendingStamp');
-                    if (pendingStamp && this.stamps[pendingStamp]) {
-                        this.pendingStamp = pendingStamp;
-                        log(`セッションストレージからスタンプ復元: ${pendingStamp}`);
-                    }
+                    // URLをクリーンにする（パラメータを削除）
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                    
+                    // collect.htmlにリダイレクトする
+                    // window.location.href = `collect.html?stamp=${stampParam}`;
+                    // return;
+                }
+                
+                // セッションストレージからペンディングスタンプを復元
+                const pendingStamp = sessionStorage.getItem('pendingStamp');
+                if (pendingStamp && this.stamps[pendingStamp]) {
+                    this.pendingStamp = pendingStamp;
+                    log(`セッションストレージからスタンプ復元: ${pendingStamp}`);
                 }
             },
 
@@ -821,15 +809,19 @@
                     const savedStamps = localStorage.getItem('arStamps2024');
                     if (savedStamps) {
                         const parsedStamps = JSON.parse(savedStamps);
+                        let loadedCount = 0;
                         Object.keys(this.stamps).forEach(key => {
                             if (parsedStamps[key] && parsedStamps[key].collected) {
                                 this.stamps[key].collected = true;
+                                loadedCount++;
                             }
                         });
-                        log('スタンプデータを読み込みました');
+                        log(`スタンプデータを読み込みました: ${loadedCount}個のスタンプ`);
+                    } else {
+                        log('保存されたスタンプデータがありません');
                     }
                 } catch (e) {
-                    log('localStorage利用不可、メモリ内で管理します');
+                    log('localStorage利用不可、メモリ内で管理します: ' + e.message);
                 }
             },
 
