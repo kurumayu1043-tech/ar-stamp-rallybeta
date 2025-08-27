@@ -1,10 +1,11 @@
 // Service Worker for AR Stamp Rally PWA
-const CACHE_NAME = 'ar-stamp-v1';
+const CACHE_NAME = 'ar-stamp-v2';
+const BASE_URL = '/ar-stamp-rallybeta/';
 const urlsToCache = [
-  '/ar-stamp-rallybeta/',
-  '/ar-stamp-rallybeta/index.html',
-  '/ar-stamp-rallybeta/nisyama1.png',
-  '/ar-stamp-rallybeta/manifest.json',
+  BASE_URL,
+  BASE_URL + 'index.html',
+  BASE_URL + 'nisyama1.png',
+  BASE_URL + 'manifest.json',
   'https://aframe.io/releases/1.4.0/aframe.min.js'
 ];
 
@@ -17,29 +18,64 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
   );
+  // 即座にアクティベート
+  self.skipWaiting();
 });
 
-// リクエストをインターセプト
+// アクティベート時に古いキャッシュを削除
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  // すぐにクライアントをコントロール
+  self.clients.claim();
+});
+
+// フェッチイベントの処理
 self.addEventListener('fetch', event => {
-  // QRコードからのスタンプ収集URLの場合は、常にメインページにリダイレクト
   const url = new URL(event.request.url);
   
-  // stamp パラメータがある場合の処理
-  if (url.searchParams.has('stamp')) {
+  // スタンプパラメータ付きのURLの場合
+  if (url.pathname.includes('/ar-stamp-rallybeta') && url.searchParams.has('stamp')) {
+    // パラメータを保持したままindex.htmlを返す
     event.respondWith(
-      caches.match('/ar-stamp-rallybeta/index.html')
+      caches.match(BASE_URL + 'index.html')
         .then(response => {
           if (response) {
-            // キャッシュからindex.htmlを返すが、URLパラメータは維持
+            // キャッシュされたindex.htmlを返す
+            // JavaScriptがパラメータを処理する
             return response;
           }
           // キャッシュにない場合はネットワークから取得
-          return fetch('/ar-stamp-rallybeta/index.html');
+          return fetch(BASE_URL + 'index.html')
+            .then(response => {
+              // 成功したらキャッシュに追加
+              if (response && response.status === 200) {
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME)
+                  .then(cache => {
+                    cache.put(BASE_URL + 'index.html', responseToCache);
+                  });
+              }
+              return response;
+            });
+        })
+        .catch(() => {
+          // オフライン時もindex.htmlを返す
+          return caches.match(BASE_URL + 'index.html');
         })
     );
     return;
   }
-
+  
   // 通常のリクエスト処理
   event.respondWith(
     caches.match(event.request)
@@ -48,7 +84,8 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        // なければネットワークから取得
+        
+        // キャッシュにない場合はネットワークから取得
         return fetch(event.request)
           .then(response => {
             // 有効なレスポンスでない場合はそのまま返す
@@ -56,32 +93,33 @@ self.addEventListener('fetch', event => {
               return response;
             }
             
-            // レスポンスをキャッシュに保存
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
+            // HTTPSまたはローカルホストの場合のみキャッシュ
+            const isHTTPS = url.protocol === 'https:';
+            const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+            
+            if (isHTTPS || isLocalhost) {
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
             
             return response;
           });
       })
+      .catch(() => {
+        // オフラインフォールバック
+        if (event.request.destination === 'document') {
+          return caches.match(BASE_URL + 'index.html');
+        }
+      })
   );
 });
 
-// 古いキャッシュを削除
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
+// メッセージ受信時の処理
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

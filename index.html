@@ -503,8 +503,8 @@
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-        // Service Worker登録（iOS以外、またはPWAモード）
-        if ('serviceWorker' in navigator && (!isIOS || isStandalone)) {
+        // Service Worker登録
+        if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(reg => log('Service Worker registered'))
                 .catch(err => log('Service Worker registration failed: ' + err));
@@ -515,6 +515,7 @@
             cameraStream: null,
             isIOS: isIOS,
             isSafari: isSafari,
+            pendingStamp: null, // URLパラメータから取得したスタンプを一時保持
             stamps: {
                 entrance: { 
                     name: '入場口', 
@@ -572,31 +573,68 @@
              * アプリケーションの初期化
              */
             init() {
-                // URLパラメータをチェック
-                this.checkUrlParams();
+                // 最初にURLパラメータをチェックして処理
+                this.processUrlParams();
                 
+                // その他の初期化処理
                 this.loadStamps();
                 this.setupEventListeners();
                 this.setupIOSInstall();
                 this.renderStamps();
                 this.updateStampCount();
                 
-                // スタンプパラメータがあればAR表示、なければスタート画面
-                const urlParams = new URLSearchParams(window.location.search);
-                const stampParam = urlParams.get('stamp');
-                
-                if (stampParam && this.stamps[stampParam]) {
-                    // 新しいスタンプを獲得
-                    if (!this.stamps[stampParam].collected) {
-                        this.collectStamp(stampParam);
-                        log(`新しいスタンプを獲得: ${stampParam} (${this.stamps[stampParam].name})`);
-                    }
+                // ペンディングスタンプがあればAR表示、なければスタート画面
+                if (this.pendingStamp) {
                     this.showScreen('ar');
                 } else {
                     this.showScreen('start');
                 }
                 
                 log(`AR Stamp Rally initialized - iOS: ${isIOS}, Safari: ${isSafari}, Standalone: ${isStandalone}`);
+            },
+
+            /**
+             * URLパラメータを処理してクリーンなURLに書き換え
+             */
+            processUrlParams() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const stampParam = urlParams.get('stamp');
+                
+                if (stampParam) {
+                    log(`URLパラメータ検出: stamp=${stampParam}`);
+                    
+                    // スタンプパラメータをセッションストレージに保存
+                    if (this.stamps[stampParam]) {
+                        // セッションストレージに一時保存
+                        sessionStorage.setItem('pendingStamp', stampParam);
+                        this.pendingStamp = stampParam;
+                        
+                        // 新しいスタンプの場合は収集
+                        if (!this.stamps[stampParam].collected) {
+                            this.stamps[stampParam].collected = true;
+                            log(`新しいスタンプを獲得: ${this.stamps[stampParam].name}`);
+                        } else {
+                            log(`既に獲得済みのスタンプ: ${this.stamps[stampParam].name}`);
+                        }
+                        
+                        // URLをクリーンにする（パラメータを削除）
+                        const cleanUrl = window.location.origin + window.location.pathname;
+                        window.history.replaceState({}, document.title, cleanUrl);
+                        log('URLをクリーンに書き換えました');
+                    } else {
+                        log(`無効なスタンプパラメータ: ${stampParam}`);
+                        // 無効なパラメータも削除
+                        const cleanUrl = window.location.origin + window.location.pathname;
+                        window.history.replaceState({}, document.title, cleanUrl);
+                    }
+                } else {
+                    // セッションストレージからペンディングスタンプを復元
+                    const pendingStamp = sessionStorage.getItem('pendingStamp');
+                    if (pendingStamp && this.stamps[pendingStamp]) {
+                        this.pendingStamp = pendingStamp;
+                        log(`セッションストレージからスタンプ復元: ${pendingStamp}`);
+                    }
+                }
             },
 
             /**
@@ -607,30 +645,6 @@
                     const installMsg = document.getElementById('ios-install-message');
                     if (installMsg) {
                         installMsg.classList.add('show');
-                    }
-                }
-            },
-
-            /**
-             * URLパラメータをチェックしてスタンプを収集
-             */
-            checkUrlParams() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const stampParam = urlParams.get('stamp');
-                
-                if (stampParam) {
-                    log(`URLパラメータ検出: stamp=${stampParam}`);
-                    
-                    if (this.stamps[stampParam]) {
-                        if (!this.stamps[stampParam].collected) {
-                            // 新しいスタンプを収集
-                            this.stamps[stampParam].collected = true;
-                            log(`スタンプ獲得: ${this.stamps[stampParam].name}`);
-                        } else {
-                            log(`既に獲得済みのスタンプ: ${this.stamps[stampParam].name}`);
-                        }
-                    } else {
-                        log(`無効なスタンプパラメータ: ${stampParam}`);
                     }
                 }
             },
@@ -796,10 +810,9 @@
                     this.updateStampCount();
                     log('すべてのスタンプをリセットしました');
                     
-                    // URLパラメータを削除
-                    const url = new URL(window.location);
-                    url.searchParams.delete('stamp');
-                    window.history.replaceState({}, document.title, url.pathname);
+                    // セッションストレージもクリア
+                    sessionStorage.removeItem('pendingStamp');
+                    this.pendingStamp = null;
                 }
             },
 
@@ -811,6 +824,9 @@
                 document.getElementById('back-button').addEventListener('click', () => this.showScreen('start'));
                 document.getElementById('ar-back-button').addEventListener('click', () => {
                     this.stopAR();
+                    // ペンディングスタンプをクリア
+                    sessionStorage.removeItem('pendingStamp');
+                    this.pendingStamp = null;
                     this.showScreen('stamps');
                 });
                 document.getElementById('show-start-button').addEventListener('click', () => this.showScreen('start'));
@@ -860,8 +876,17 @@
                     this.updateStampCount();
                     this.stopCamera();
                     this.stopAR();
+                    // スタンプ保存
+                    this.saveStamps();
                     log('スタンプ一覧画面を表示');
                 } else if (screenId === 'ar') {
+                    // ペンディングスタンプがない場合は何もしない
+                    if (!this.pendingStamp) {
+                        log('表示するスタンプがありません');
+                        this.showScreen('start');
+                        return;
+                    }
+                    
                     // カメラビューを表示（背景として）
                     cameraView.style.display = 'block';
                     this.startCamera();
@@ -873,11 +898,9 @@
                     arOverlay.style.display = 'block';
                     
                     // 場所情報を表示
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const stampParam = urlParams.get('stamp');
-                    if (stampParam && this.stamps[stampParam]) {
-                        document.getElementById('ar-location-name').textContent = this.stamps[stampParam].name;
-                        document.getElementById('ar-location-desc').textContent = this.stamps[stampParam].description;
+                    if (this.pendingStamp && this.stamps[this.pendingStamp]) {
+                        document.getElementById('ar-location-name').textContent = this.stamps[this.pendingStamp].name;
+                        document.getElementById('ar-location-desc').textContent = this.stamps[this.pendingStamp].description;
                     }
                     
                     // ARシーンを再生
@@ -999,12 +1022,10 @@
              * スタンプ獲得エフェクトを表示
              */
             showStampEffect() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const stampParam = urlParams.get('stamp');
                 let stampName = 'スタンプ';
                 
-                if (stampParam && this.stamps[stampParam]) {
-                    stampName = this.stamps[stampParam].name;
+                if (this.pendingStamp && this.stamps[this.pendingStamp]) {
+                    stampName = this.stamps[this.pendingStamp].name;
                 }
                 
                 // スタンプ獲得メッセージを表示
@@ -1060,6 +1081,9 @@
                     effectDiv.remove();
                     setTimeout(() => {
                         this.stopAR();
+                        // ペンディングスタンプをクリア
+                        sessionStorage.removeItem('pendingStamp');
+                        this.pendingStamp = null;
                         this.showScreen('stamps');
                     }, 1000);
                 }, 2000);
@@ -1086,10 +1110,9 @@
                     // 獲得済みスタンプをクリックするとAR表示
                     if (stamp.collected) {
                         item.addEventListener('click', () => {
-                            // URLパラメータを一時的に設定
-                            const url = new URL(window.location);
-                            url.searchParams.set('stamp', key);
-                            window.history.pushState({}, '', url);
+                            // セッションストレージに設定
+                            sessionStorage.setItem('pendingStamp', key);
+                            this.pendingStamp = key;
                             this.showScreen('ar');
                         });
                     }
@@ -1111,11 +1134,9 @@
                 const stamps = ['entrance', 'ticket', 'stage', 'bunmi1', 'bunmi2', 'yamato', 'rhythm', 'gym'];
                 const stampType = stamps[parseInt(e.key) - 1];
                 if (stampType) {
-                    // URLパラメータを設定
-                    const url = new URL(window.location);
-                    url.searchParams.set('stamp', stampType);
-                    window.history.pushState({}, '', url);
-                    
+                    // セッションストレージに設定
+                    sessionStorage.setItem('pendingStamp', stampType);
+                    app.pendingStamp = stampType;
                     app.collectStamp(stampType);
                     app.showScreen('ar');
                     app.log(`Debug: スタンプ追加 ${stampType}`);
