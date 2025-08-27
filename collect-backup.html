@@ -203,22 +203,6 @@
             font-size: 1rem;
             z-index: 15;
         }
-        
-        /* デバッグ情報表示 */
-        .debug-info {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #0f0;
-            padding: 10px;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 0.8rem;
-            z-index: 1000;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -242,6 +226,12 @@
             <a href="/ar-stamp-rallybeta/" class="action-button secondary">
                 スタンプ一覧へ
             </a>
+        </div>
+        <!-- デバッグ情報 -->
+        <div style="margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 10px; font-size: 0.8rem; display: none;" id="debug-info">
+            <p>URL: <span id="debug-url"></span></p>
+            <p>スタンプID: <span id="debug-stamp-id"></span></p>
+            <p>localStorage: <span id="debug-storage"></span></p>
         </div>
     </div>
 
@@ -278,26 +268,9 @@
 
         <a-camera></a-camera>
     </a-scene>
-    
-    <!-- デバッグ情報 -->
-    <div class="debug-info" id="debug-info"></div>
 
     <script>
-        // デバッグログ関数
-        function debugLog(message) {
-            console.log('[COLLECT]', message);
-            const debugDiv = document.getElementById('debug-info');
-            if (window.location.search.includes('debug=1')) {
-                debugDiv.style.display = 'block';
-                const timestamp = new Date().toTimeString().split(' ')[0];
-                debugDiv.innerHTML = `[${timestamp}] ${message}<br>` + debugDiv.innerHTML;
-                if (debugDiv.innerHTML.split('<br>').length > 10) {
-                    debugDiv.innerHTML = debugDiv.innerHTML.split('<br>').slice(0, 10).join('<br>');
-                }
-            }
-        }
-
-        // スタンプ情報の定義（完全に独立した定義）
+        // スタンプ情報の定義
         const stampData = {
             entrance: { 
                 name: '入場口', 
@@ -344,124 +317,74 @@
         let currentStamp = null;
         let cameraStream = null;
 
-        // URLパラメータを安全に取得
-        function getStampIdFromURL() {
-            try {
-                // 複数の方法でURLパラメータを取得
-                const url = new URL(window.location.href);
-                const searchParams = new URLSearchParams(url.search);
-                const stampId = searchParams.get('stamp');
-                
-                debugLog(`URL: ${window.location.href}`);
-                debugLog(`Search: ${url.search}`);
-                debugLog(`Stamp ID from URL: ${stampId}`);
-                
-                return stampId;
-            } catch (e) {
-                debugLog(`URLパラメータ取得エラー: ${e.message}`);
-                // フォールバック: 手動でパースを試みる
-                const match = window.location.search.match(/[?&]stamp=([^&]+)/);
-                const stampId = match ? match[1] : null;
-                debugLog(`Fallback Stamp ID: ${stampId}`);
-                return stampId;
-            }
-        }
-
         // 初期化
         function init() {
-            debugLog('=== 初期化開始 ===');
+            // デバッグ: 現在のURLを表示
+            console.log('現在のURL:', window.location.href);
+            console.log('URLパラメータ:', window.location.search);
             
-            // URLからスタンプIDを取得
-            const stampId = getStampIdFromURL();
+            // URLパラメータからスタンプIDを取得
+            const urlParams = new URLSearchParams(window.location.search);
+            const stampId = urlParams.get('stamp');
             
-            if (!stampId) {
-                debugLog('スタンプIDがURLに含まれていません');
-                showError('URLにスタンプ情報が含まれていません');
-                return;
-            }
+            console.log('取得したスタンプID:', stampId);
+            console.log('利用可能なスタンプ:', Object.keys(stampData));
             
-            if (!stampData[stampId]) {
-                debugLog(`無効なスタンプID: ${stampId}`);
-                debugLog(`有効なスタンプID: ${Object.keys(stampData).join(', ')}`);
-                showError(`無効なスタンプID: ${stampId}`);
-                return;
-            }
-            
-            // スタンプ情報を取得して表示
-            currentStamp = stampId;
-            const stamp = stampData[stampId];
-            
-            debugLog(`処理中のスタンプ: ${stampId} - ${stamp.name}`);
-            
-            // UI更新
-            updateUI(stamp);
-            
-            // スタンプを保存
-            const saved = saveStamp(stampId);
-            
-            // スタンプ数を更新
-            updateStampCount();
-            
-            // 成功メッセージ表示
-            if (saved) {
+            if (stampId && stampData[stampId]) {
+                currentStamp = stampId;
+                const stamp = stampData[stampId];
+                
+                console.log('スタンプ情報:', stamp);
+                
+                // UI更新
+                document.getElementById('stamp-title').textContent = stamp.name + 'のスタンプ';
+                document.getElementById('stamp-icon').textContent = stamp.icon;
+                document.getElementById('stamp-description').textContent = stamp.description;
+                document.getElementById('ar-location-name').textContent = stamp.name;
+                
+                // スタンプを保存
+                saveStamp(stampId);
+                
+                // スタンプ数を更新
+                updateStampCount();
+                
+                // 成功メッセージ表示
                 setTimeout(() => {
                     document.getElementById('success-message').style.display = 'block';
                 }, 500);
+            } else {
+                // 無効なスタンプの場合
+                console.log('無効なスタンプID:', stampId);
+                document.getElementById('stamp-title').textContent = '無効なQRコード';
+                document.getElementById('stamp-icon').textContent = '❌';
+                document.getElementById('stamp-description').textContent = '正しいQRコードをスキャンしてください。';
+                document.querySelector('.ar-button').style.display = 'none';
             }
-            
-            debugLog('=== 初期化完了 ===');
-        }
-
-        // UI更新
-        function updateUI(stamp) {
-            document.getElementById('stamp-title').textContent = stamp.name + 'のスタンプ';
-            document.getElementById('stamp-icon').textContent = stamp.icon;
-            document.getElementById('stamp-description').textContent = stamp.description;
-            document.getElementById('ar-location-name').textContent = stamp.name;
-            
-            debugLog(`UI更新: ${stamp.name}`);
-        }
-
-        // エラー表示
-        function showError(message) {
-            document.getElementById('stamp-title').textContent = 'エラー';
-            document.getElementById('stamp-icon').textContent = '❌';
-            document.getElementById('stamp-description').textContent = message;
-            document.querySelector('.ar-button').style.display = 'none';
         }
 
         // スタンプを保存
         function saveStamp(stampId) {
             try {
-                debugLog(`スタンプ保存開始: ${stampId}`);
+                console.log('保存しようとしているスタンプID:', stampId);
                 
                 // 既存のスタンプデータを取得
-                const existingData = localStorage.getItem('arStamps2024');
-                const stamps = existingData ? JSON.parse(existingData) : {};
-                
-                debugLog(`既存データ: ${JSON.stringify(stamps)}`);
-                
-                // 新規スタンプかチェック
-                const isNew = !stamps[stampId];
+                const stamps = JSON.parse(localStorage.getItem('arStamps2024') || '{}');
+                console.log('現在のlocalStorageデータ:', stamps);
                 
                 // スタンプを記録
-                stamps[stampId] = { 
-                    collected: true,
-                    timestamp: new Date().toISOString()
-                };
+                if (!stamps[stampId]) {
+                    stamps[stampId] = { collected: true };
+                    console.log('新規スタンプを追加:', stampId);
+                } else {
+                    console.log('既存のスタンプ:', stampId);
+                }
                 
                 // 保存
-                const saveData = JSON.stringify(stamps);
-                localStorage.setItem('arStamps2024', saveData);
-                
-                debugLog(`保存データ: ${saveData}`);
-                debugLog(`スタンプ保存完了: ${stampId} (新規: ${isNew})`);
-                
-                return isNew;
+                localStorage.setItem('arStamps2024', JSON.stringify(stamps));
+                console.log('保存後のlocalStorageデータ:', stamps);
+                console.log('スタンプ保存完了:', stampId);
             } catch (e) {
-                debugLog(`スタンプ保存エラー: ${e.message}`);
                 console.error('スタンプ保存エラー:', e);
-                return false;
             }
         }
 
@@ -471,23 +394,13 @@
                 const stamps = JSON.parse(localStorage.getItem('arStamps2024') || '{}');
                 const collectedCount = Object.keys(stamps).filter(key => stamps[key].collected).length;
                 document.getElementById('stamp-count').textContent = `${collectedCount} / 8`;
-                
-                debugLog(`スタンプ数: ${collectedCount} / 8`);
             } catch (e) {
-                debugLog(`スタンプ数取得エラー: ${e.message}`);
                 console.error('スタンプ数取得エラー:', e);
             }
         }
 
         // AR表示
         async function showAR() {
-            if (!currentStamp) {
-                debugLog('AR表示エラー: スタンプが設定されていません');
-                return;
-            }
-            
-            debugLog(`AR表示: ${currentStamp}`);
-            
             document.getElementById('main-container').style.display = 'none';
             document.getElementById('camera-view').style.display = 'block';
             document.getElementById('ar-scene').style.display = 'block';
@@ -513,12 +426,8 @@
                 if (arScene.play) {
                     arScene.play();
                 }
-                
-                debugLog('AR表示成功');
             } catch (err) {
-                debugLog(`カメラエラー: ${err.message}`);
                 console.error('カメラエラー:', err);
-                
                 // フロントカメラで再試行
                 try {
                     const video = document.getElementById('camera-video');
@@ -533,8 +442,6 @@
 
         // AR非表示
         function hideAR() {
-            debugLog('AR非表示');
-            
             document.getElementById('main-container').style.display = 'flex';
             document.getElementById('camera-view').style.display = 'none';
             document.getElementById('ar-scene').style.display = 'none';
@@ -554,15 +461,22 @@
             }
         }
 
+        // デバッグモード（URLに?debug=1が含まれている場合）
+        function checkDebugMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('debug') === '1') {
+                document.getElementById('debug-info').style.display = 'block';
+                document.getElementById('debug-url').textContent = window.location.href;
+                document.getElementById('debug-stamp-id').textContent = urlParams.get('stamp') || 'なし';
+                const storage = localStorage.getItem('arStamps2024');
+                document.getElementById('debug-storage').textContent = storage ? JSON.stringify(JSON.parse(storage)) : 'empty';
+            }
+        }
+        
         // 初期化実行
         window.addEventListener('DOMContentLoaded', () => {
-            debugLog('ページ読み込み完了');
             init();
-        });
-
-        // エラーハンドリング
-        window.addEventListener('error', (e) => {
-            debugLog(`グローバルエラー: ${e.message}`);
+            checkDebugMode();
         });
     </script>
 </body>
