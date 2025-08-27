@@ -1,0 +1,20 @@
+{
+  "name": "文化祭ARスタンプラリー",
+  "short_name": "ARスタンプ",
+  "description": "文化祭で8つのスタンプを集めよう！",
+  "start_url": "/ar-stamp-rallybeta/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "icons": [
+    {
+      "src": "nisyama1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "scope": "/ar-stamp-rallybeta/",
+  "prefer_related_applications": false,
+  "categories": ["entertainment", "games"]
+}

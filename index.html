@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>文化祭 ARスタンプラリー</title>
+    
+    <!-- PWA対応のためのマニフェスト -->
+    <link rel="manifest" href="manifest.json">
+    
     <!-- A-FrameライブラリをCDNから読み込み -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
@@ -168,12 +175,43 @@
             font-size: 1.5rem;
             display: none;
             cursor: pointer;
-            z-index: 11;
+            z-index: 201;
             transition: background-color 0.2s;
         }
         
         #back-button:hover, #ar-back-button:hover {
             background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        /* カメラビュー */
+        #camera-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 5;
+        }
+
+        #camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #camera-permission-msg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 6;
+            display: none;
         }
 
         /* AR表示用 */
@@ -183,9 +221,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: none;
-            z-index: 9;
+            z-index: 100;
         }
 
         #ar-scene {
@@ -194,7 +231,32 @@
             left: 0;
             width: 100% !important;
             height: 100% !important;
-            z-index: 100;
+            z-index: 101;
+        }
+
+        /* AR情報オーバーレイ */
+        .ar-overlay {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            z-index: 200;
+            text-align: center;
+            display: none;
+        }
+
+        .ar-overlay h3 {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+
+        .ar-overlay p {
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
 
         /* コンプリート画面 */
@@ -257,6 +319,17 @@
         .reset-button:hover {
             background-color: #555;
         }
+
+        /* PWAインストールボタン */
+        #install-button {
+            display: none;
+            background-color: #4CAF50;
+            margin-top: 20px;
+        }
+
+        #install-button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -270,6 +343,7 @@
                 全部集めると素敵なことが...？
             </p>
             <button id="stamps-button" class="cta-button">スタンプ一覧を見る</button>
+            <button id="install-button" class="cta-button">アプリとして保存</button>
             <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">
                 QRコードはスマホのカメラアプリで<br>
                 読み取ってください
@@ -290,14 +364,27 @@
             </p>
         </div>
 
+        <!-- カメラビュー（AR背景用） -->
+        <div id="camera-view">
+            <video id="camera-video" autoplay playsinline muted></video>
+            <div id="camera-permission-msg">
+                <p>カメラへのアクセスを許可してください</p>
+                <p style="font-size: 0.8rem; margin-top: 10px;">ARでマスコットを表示します</p>
+            </div>
+        </div>
+
         <!-- AR表示画面 -->
         <div id="ar-screen">
-            <!-- A-Frameシーンコンテナ -->
+            <!-- AR情報オーバーレイ -->
+            <div class="ar-overlay" id="ar-overlay">
+                <h3 id="ar-location-name">場所名</h3>
+                <p id="ar-location-desc">説明</p>
+            </div>
         </div>
     </div>
     
     <!-- 2D画像を表示するA-Frameシーン -->
-    <a-scene id="ar-scene" embedded>
+    <a-scene id="ar-scene" embedded vr-mode-ui="enabled: false">
         <a-assets>
             <!-- マスコットキャラクターの画像 (nisyama1.png) -->
             <img id="mascot-image" src="./nisyama1.png" crossorigin="anonymous">
@@ -315,9 +402,6 @@
             animation__rotation="property: rotation; from: 0 0 -10; to: 0 0 10; dur: 4000; easing: easeInOutSine; loop: true; dir: alternate"
             animation__scale="property: scale; from: 3 3 1; to: 3.5 3.5 1; dur: 1500; easing: easeInOutSine; loop: true; dir: alternate">
         </a-image>
-
-        <!-- 空の背景色を設定 -->
-        <a-sky color="#667eea"></a-sky>
 
         <!-- A-Frameのデフォルトカメラを使用 -->
         <a-camera></a-camera>
@@ -344,8 +428,17 @@
             logConsole.scrollTop = logConsole.scrollHeight;
         }
 
+        // PWA対応 - Service Workerの登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => log('Service Worker registered'))
+                .catch(err => log('Service Worker registration failed'));
+        }
+
         const app = {
             currentScreen: 'start',
+            cameraStream: null,
+            deferredPrompt: null,
             stamps: {
                 entrance: { 
                     name: '入場口', 
@@ -408,6 +501,7 @@
                 
                 this.loadStamps();
                 this.setupEventListeners();
+                this.setupPWA();
                 this.renderStamps();
                 this.updateStampCount();
                 
@@ -426,7 +520,35 @@
                     this.showScreen('start');
                 }
                 
-                log('AR Stamp Rally initialized - QRコードは外部カメラアプリで読み取り');
+                log('AR Stamp Rally initialized - Camera AR mode enabled');
+            },
+
+            /**
+             * PWA機能のセットアップ
+             */
+            setupPWA() {
+                // インストールプロンプトをキャッチ
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    this.deferredPrompt = e;
+                    document.getElementById('install-button').style.display = 'block';
+                });
+
+                // インストールボタンのイベント
+                document.getElementById('install-button').addEventListener('click', async () => {
+                    if (this.deferredPrompt) {
+                        this.deferredPrompt.prompt();
+                        const { outcome } = await this.deferredPrompt.userChoice;
+                        log(`PWA install ${outcome}`);
+                        this.deferredPrompt = null;
+                        document.getElementById('install-button').style.display = 'none';
+                    }
+                });
+
+                // スタンドアロンモードで実行中かチェック
+                if (window.matchMedia('(display-mode: standalone)').matches) {
+                    log('Running as PWA');
+                }
             },
 
             /**
@@ -450,6 +572,68 @@
                     } else {
                         log(`無効なスタンプパラメータ: ${stampParam}`);
                     }
+                }
+            },
+
+            /**
+             * カメラを起動
+             */
+            async startCamera() {
+                const video = document.getElementById('camera-video');
+                const permissionMsg = document.getElementById('camera-permission-msg');
+                
+                try {
+                    permissionMsg.style.display = 'block';
+                    
+                    const constraints = {
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
+                    };
+                    
+                    this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = this.cameraStream;
+                    
+                    permissionMsg.style.display = 'none';
+                    log('Camera started successfully');
+                } catch (err) {
+                    log(`Camera error: ${err}`);
+                    // フロントカメラで再試行
+                    try {
+                        const fallbackConstraints = {
+                            video: { 
+                                facingMode: 'user',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            }
+                        };
+                        this.cameraStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                        video.srcObject = this.cameraStream;
+                        permissionMsg.style.display = 'none';
+                        log('Using front camera as fallback');
+                    } catch (fallbackErr) {
+                        permissionMsg.innerHTML = `
+                            <p>カメラへのアクセスが拒否されました</p>
+                            <p style="font-size: 0.8rem; margin-top: 10px;">
+                                ブラウザの設定でカメラの使用を許可してください
+                            </p>
+                        `;
+                        log(`Camera access denied: ${fallbackErr}`);
+                    }
+                }
+            },
+
+            /**
+             * カメラを停止
+             */
+            stopCamera() {
+                if (this.cameraStream) {
+                    this.cameraStream.getTracks().forEach(track => track.stop());
+                    this.cameraStream = null;
+                    document.getElementById('camera-video').srcObject = null;
+                    log('Camera stopped');
                 }
             },
 
@@ -530,19 +714,24 @@
                 const stampScreen = document.getElementById('stamp-screen');
                 const arScreen = document.getElementById('ar-screen');
                 const arScene = document.getElementById('ar-scene');
+                const cameraView = document.getElementById('camera-view');
                 const backButton = document.getElementById('back-button');
                 const arBackButton = document.getElementById('ar-back-button');
+                const arOverlay = document.getElementById('ar-overlay');
                 
                 // 全ての画面を非表示に
                 startScreen.style.display = 'none';
                 stampScreen.style.display = 'none';
                 arScreen.style.display = 'none';
                 arScene.style.display = 'none';
+                cameraView.style.display = 'none';
                 backButton.style.display = 'none';
                 arBackButton.style.display = 'none';
+                arOverlay.style.display = 'none';
 
                 if (screenId === 'start') {
                     startScreen.style.display = 'flex';
+                    this.stopCamera();
                     this.stopAR();
                     log('スタート画面を表示');
                 } else if (screenId === 'stamps') {
@@ -550,12 +739,27 @@
                     backButton.style.display = 'block';
                     this.renderStamps();
                     this.updateStampCount();
+                    this.stopCamera();
                     this.stopAR();
                     log('スタンプ一覧画面を表示');
                 } else if (screenId === 'ar') {
+                    // カメラビューを表示（背景として）
+                    cameraView.style.display = 'block';
+                    this.startCamera();
+                    
+                    // AR要素を表示
                     arScreen.style.display = 'block';
                     arScene.style.display = 'block';
                     arBackButton.style.display = 'block';
+                    arOverlay.style.display = 'block';
+                    
+                    // 場所情報を表示
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const stampParam = urlParams.get('stamp');
+                    if (stampParam && this.stamps[stampParam]) {
+                        document.getElementById('ar-location-name').textContent = this.stamps[stampParam].name;
+                        document.getElementById('ar-location-desc').textContent = this.stamps[stampParam].description;
+                    }
                     
                     // ARシーンを再生
                     if (arScene.play && typeof arScene.play === 'function') {
@@ -565,7 +769,7 @@
                     // スタンプ獲得エフェクトを表示
                     this.showStampEffect();
                     
-                    log('AR画面を表示 (nisyama1.png)');
+                    log('AR画面を表示（カメラ背景付き）');
                 }
             },
             
@@ -591,6 +795,9 @@
                         mascotImage.setAttribute('scale', '3 3 1');
                         mascotImage.setAttribute('rotation', '0 0 0');
                     }
+                    
+                    // カメラも停止
+                    this.stopCamera();
                     
                     log('ARシーンを停止');
                 }
@@ -690,7 +897,7 @@
                     font-size: 1.5rem;
                     font-weight: bold;
                     color: #ff5e62;
-                    z-index: 200;
+                    z-index: 202;
                     animation: stampGetEffect 2s ease-out;
                     pointer-events: none;
                     text-align: center;
