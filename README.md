@@ -26,14 +26,14 @@
 ### QRコードの作成方法
 各場所用のQRコードは以下のURLで作成してください：
 
-- **入場口**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=entrance`
-- **金券売り場**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=ticket`
-- **ステージ前**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=stage`
-- **文実模擬店１**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=bunmi1`
-- **文実模擬店２**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=bunmi2`
-- **庭大和**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=yamato`
-- **リズム館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=rhythm`
-- **体育館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamp.html?stamp=gym`
+- **入場口**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=entrance`
+- **金券売り場**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=ticket`
+- **ステージ前**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=stage`
+- **文実模擬店１**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=bunmi1`
+- **文実模擬店２**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=bunmi2`
+- **庭大和**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=yamato`
+- **リズム館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=rhythm`
+- **体育館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=gym`
 
 ## 機能
 - URLパラメータによるスタンプ収集（QRコード読み取り後）

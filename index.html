@@ -822,8 +822,8 @@
                     if (savedStamps) {
                         const parsedStamps = JSON.parse(savedStamps);
                         Object.keys(this.stamps).forEach(key => {
-                            if (parsedStamps[key]) {
-                                this.stamps[key].collected = parsedStamps[key].collected;
+                            if (parsedStamps[key] && parsedStamps[key].collected) {
+                                this.stamps[key].collected = true;
                             }
                         });
                         log('スタンプデータを読み込みました');
@@ -838,7 +838,14 @@
              */
             saveStamps() {
                 try {
-                    localStorage.setItem('arStamps2024', JSON.stringify(this.stamps));
+                    // collect.htmlと同じ形式で保存
+                    const saveData = {};
+                    Object.keys(this.stamps).forEach(key => {
+                        if (this.stamps[key].collected) {
+                            saveData[key] = { collected: true };
+                        }
+                    });
+                    localStorage.setItem('arStamps2024', JSON.stringify(saveData));
                     log('スタンプデータを保存しました');
                 } catch (e) {
                     log('localStorage利用不可');
