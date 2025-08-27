@@ -573,7 +573,10 @@
              * アプリケーションの初期化
              */
             init() {
-                // 最初にURLパラメータをチェックして処理
+                // 最初にlocalStorageからペンディングスタンプをチェック
+                this.checkPendingStamps();
+                
+                // URLパラメータをチェックして処理
                 this.processUrlParams();
                 
                 // その他の初期化処理
@@ -591,6 +594,51 @@
                 }
                 
                 log(`AR Stamp Rally initialized - iOS: ${isIOS}, Safari: ${isSafari}, Standalone: ${isStandalone}`);
+            },
+
+            /**
+             * localStorageからペンディングスタンプをチェック
+             */
+            checkPendingStamps() {
+                try {
+                    // stamp.htmlから渡されたスタンプをチェック
+                    const pendingStamps = JSON.parse(localStorage.getItem('pendingStamps') || '[]');
+                    const lastStamp = localStorage.getItem('lastStamp');
+                    const timestamp = localStorage.getItem('stampTimestamp');
+                    
+                    if (pendingStamps.length > 0) {
+                        // 最新のスタンプを処理
+                        const stampToProcess = lastStamp || pendingStamps[pendingStamps.length - 1];
+                        
+                        // タイムスタンプチェック（5秒以内なら新しいスタンプとみなす）
+                        const now = Date.now();
+                        const stampTime = parseInt(timestamp || '0');
+                        const isRecent = (now - stampTime) < 5000;
+                        
+                        if (this.stamps[stampToProcess]) {
+                            log(`ペンディングスタンプ検出: ${stampToProcess} (Recent: ${isRecent})`);
+                            
+                            // スタンプを収集
+                            if (!this.stamps[stampToProcess].collected || isRecent) {
+                                this.stamps[stampToProcess].collected = true;
+                                this.pendingStamp = stampToProcess;
+                                log(`スタンプ獲得: ${this.stamps[stampToProcess].name}`);
+                            }
+                            
+                            // 処理済みのスタンプを削除
+                            const remainingStamps = pendingStamps.filter(s => s !== stampToProcess);
+                            if (remainingStamps.length > 0) {
+                                localStorage.setItem('pendingStamps', JSON.stringify(remainingStamps));
+                            } else {
+                                localStorage.removeItem('pendingStamps');
+                            }
+                            localStorage.removeItem('lastStamp');
+                            localStorage.removeItem('stampTimestamp');
+                        }
+                    }
+                } catch (e) {
+                    log('localStorage pendingStamps check error: ' + e);
+                }
             },
 
             /**
