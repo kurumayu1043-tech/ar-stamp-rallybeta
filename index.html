@@ -2,11 +2,14 @@
 <html lang="ja">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ARスタンプ">
     <title>文化祭 ARスタンプラリー</title>
+    
+    <!-- iOS用アイコン -->
+    <link rel="apple-touch-icon" href="nisyama1.png">
     
     <!-- PWA対応のためのマニフェスト -->
     <link rel="manifest" href="manifest.json">
@@ -19,19 +22,25 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             overflow: hidden;
             height: 100vh;
+            height: -webkit-fill-available;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: none;
         }
 
         #app {
             position: relative;
             width: 100%;
             height: 100vh;
+            height: -webkit-fill-available;
         }
 
         /* スタート画面 */
@@ -49,6 +58,8 @@
             align-items: center;
             text-align: center;
             padding: 20px;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
             transition: opacity 0.5s ease-in-out;
             z-index: 10;
         }
@@ -74,10 +85,12 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             transition: transform 0.2s, background-color 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
         }
 
-        .cta-button:hover {
-            transform: translateY(-2px);
+        .cta-button:active {
+            transform: scale(0.95);
             background-color: #ff4a4e;
         }
 
@@ -85,6 +98,8 @@
         #stamp-screen {
             display: none;
             padding: 20px;
+            padding-top: calc(20px + env(safe-area-inset-top));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
             color: white;
             text-align: center;
             z-index: 8;
@@ -95,6 +110,7 @@
             height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         #stamp-screen h2 {
@@ -125,6 +141,7 @@
             background-color: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             opacity: 0.5;
             transition: all 0.5s ease-in-out;
             cursor: pointer;
@@ -164,7 +181,7 @@
         /* 戻るボタン */
         #back-button, #ar-back-button {
             position: fixed;
-            top: 15px;
+            top: calc(15px + env(safe-area-inset-top));
             left: 15px;
             background-color: rgba(0, 0, 0, 0.5);
             color: white;
@@ -177,9 +194,11 @@
             cursor: pointer;
             z-index: 201;
             transition: background-color 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
         }
         
-        #back-button:hover, #ar-back-button:hover {
+        #back-button:active, #ar-back-button:active {
             background-color: rgba(0, 0, 0, 0.7);
         }
 
@@ -192,6 +211,7 @@
             height: 100%;
             display: none;
             z-index: 5;
+            background-color: black;
         }
 
         #camera-video {
@@ -212,6 +232,19 @@
             text-align: center;
             z-index: 6;
             display: none;
+        }
+
+        .camera-permission-button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #ff5e62;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
         }
 
         /* AR表示用 */
@@ -237,7 +270,7 @@
         /* AR情報オーバーレイ */
         .ar-overlay {
             position: fixed;
-            top: 60px;
+            top: calc(60px + env(safe-area-inset-top));
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.7);
@@ -316,19 +349,45 @@
             margin-top: 20px;
         }
 
-        .reset-button:hover {
+        .reset-button:active {
             background-color: #555;
         }
 
-        /* PWAインストールボタン */
-        #install-button {
+        /* iOS用のホーム画面追加ボタン */
+        #ios-install-button {
             display: none;
             background-color: #4CAF50;
             margin-top: 20px;
+            font-size: 1rem;
         }
 
-        #install-button:hover {
+        #ios-install-button:active {
             background-color: #45a049;
+        }
+
+        /* iOS Safari検出メッセージ */
+        .ios-install-message {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .ios-install-message.show {
+            display: block;
+        }
+
+        @media screen and (max-width: 768px) {
+            #start-screen h1 {
+                font-size: 2rem;
+            }
+            
+            .stamp-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
         }
     </style>
 </head>
@@ -343,7 +402,14 @@
                 全部集めると素敵なことが...？
             </p>
             <button id="stamps-button" class="cta-button">スタンプ一覧を見る</button>
-            <button id="install-button" class="cta-button">アプリとして保存</button>
+            
+            <div class="ios-install-message" id="ios-install-message">
+                <p>📱 ホーム画面に追加すると便利です</p>
+                <p style="font-size: 0.8rem; margin-top: 5px;">
+                    下の共有ボタン → ホーム画面に追加
+                </p>
+            </div>
+            
             <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">
                 QRコードはスマホのカメラアプリで<br>
                 読み取ってください
@@ -368,8 +434,12 @@
         <div id="camera-view">
             <video id="camera-video" autoplay playsinline muted></video>
             <div id="camera-permission-msg">
-                <p>カメラへのアクセスを許可してください</p>
-                <p style="font-size: 0.8rem; margin-top: 10px;">ARでマスコットを表示します</p>
+                <p>📸 カメラを使用してAR表示します</p>
+                <button class="camera-permission-button" id="start-camera-button">カメラを起動</button>
+                <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.8;">
+                    iOSの場合は設定でカメラアクセスを<br>
+                    許可してください
+                </p>
             </div>
         </div>
 
@@ -384,7 +454,7 @@
     </div>
     
     <!-- 2D画像を表示するA-Frameシーン -->
-    <a-scene id="ar-scene" embedded vr-mode-ui="enabled: false">
+    <a-scene id="ar-scene" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         <a-assets>
             <!-- マスコットキャラクターの画像 (nisyama1.png) -->
             <img id="mascot-image" src="./nisyama1.png" crossorigin="anonymous">
@@ -428,17 +498,23 @@
             logConsole.scrollTop = logConsole.scrollHeight;
         }
 
-        // PWA対応 - Service Workerの登録
-        if ('serviceWorker' in navigator) {
+        // iOS Safari検出
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+        // Service Worker登録（iOS以外、またはPWAモード）
+        if ('serviceWorker' in navigator && (!isIOS || isStandalone)) {
             navigator.serviceWorker.register('sw.js')
                 .then(reg => log('Service Worker registered'))
-                .catch(err => log('Service Worker registration failed'));
+                .catch(err => log('Service Worker registration failed: ' + err));
         }
 
         const app = {
             currentScreen: 'start',
             cameraStream: null,
-            deferredPrompt: null,
+            isIOS: isIOS,
+            isSafari: isSafari,
             stamps: {
                 entrance: { 
                     name: '入場口', 
@@ -501,7 +577,7 @@
                 
                 this.loadStamps();
                 this.setupEventListeners();
-                this.setupPWA();
+                this.setupIOSInstall();
                 this.renderStamps();
                 this.updateStampCount();
                 
@@ -520,34 +596,18 @@
                     this.showScreen('start');
                 }
                 
-                log('AR Stamp Rally initialized - Camera AR mode enabled');
+                log(`AR Stamp Rally initialized - iOS: ${isIOS}, Safari: ${isSafari}, Standalone: ${isStandalone}`);
             },
 
             /**
-             * PWA機能のセットアップ
+             * iOS向けインストール案内
              */
-            setupPWA() {
-                // インストールプロンプトをキャッチ
-                window.addEventListener('beforeinstallprompt', (e) => {
-                    e.preventDefault();
-                    this.deferredPrompt = e;
-                    document.getElementById('install-button').style.display = 'block';
-                });
-
-                // インストールボタンのイベント
-                document.getElementById('install-button').addEventListener('click', async () => {
-                    if (this.deferredPrompt) {
-                        this.deferredPrompt.prompt();
-                        const { outcome } = await this.deferredPrompt.userChoice;
-                        log(`PWA install ${outcome}`);
-                        this.deferredPrompt = null;
-                        document.getElementById('install-button').style.display = 'none';
+            setupIOSInstall() {
+                if (isIOS && !isStandalone) {
+                    const installMsg = document.getElementById('ios-install-message');
+                    if (installMsg) {
+                        installMsg.classList.add('show');
                     }
-                });
-
-                // スタンドアロンモードで実行中かチェック
-                if (window.matchMedia('(display-mode: standalone)').matches) {
-                    log('Running as PWA');
                 }
             },
 
@@ -576,51 +636,100 @@
             },
 
             /**
-             * カメラを起動
+             * カメラを起動（iOS対応版）
              */
             async startCamera() {
                 const video = document.getElementById('camera-video');
                 const permissionMsg = document.getElementById('camera-permission-msg');
+                const startButton = document.getElementById('start-camera-button');
                 
-                try {
+                // iOSの場合、ユーザー操作が必要
+                if (this.isIOS && !this.cameraStream) {
                     permissionMsg.style.display = 'block';
                     
+                    // ボタンクリックでカメラ起動
+                    const startCameraHandler = async () => {
+                        startButton.removeEventListener('click', startCameraHandler);
+                        await this.requestCamera();
+                    };
+                    
+                    startButton.addEventListener('click', startCameraHandler);
+                } else {
+                    await this.requestCamera();
+                }
+            },
+
+            /**
+             * カメラアクセスをリクエスト
+             */
+            async requestCamera() {
+                const video = document.getElementById('camera-video');
+                const permissionMsg = document.getElementById('camera-permission-msg');
+                
+                try {
                     const constraints = {
                         video: { 
-                            facingMode: 'environment',
+                            facingMode: { ideal: 'environment' },
                             width: { ideal: 1920 },
                             height: { ideal: 1080 }
-                        }
+                        },
+                        audio: false
                     };
+                    
+                    // iOSの場合は特別な処理
+                    if (this.isIOS) {
+                        constraints.video = {
+                            facingMode: 'environment'
+                        };
+                    }
                     
                     this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                     video.srcObject = this.cameraStream;
                     
+                    // iOSでの再生を確実にする
+                    video.setAttribute('autoplay', '');
+                    video.setAttribute('playsinline', '');
+                    video.setAttribute('muted', '');
+                    
+                    await video.play();
+                    
                     permissionMsg.style.display = 'none';
                     log('Camera started successfully');
                 } catch (err) {
-                    log(`Camera error: ${err}`);
+                    log(`Camera error: ${err.message}`);
+                    
                     // フロントカメラで再試行
                     try {
                         const fallbackConstraints = {
                             video: { 
-                                facingMode: 'user',
-                                width: { ideal: 1280 },
-                                height: { ideal: 720 }
-                            }
+                                facingMode: 'user'
+                            },
+                            audio: false
                         };
+                        
                         this.cameraStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
                         video.srcObject = this.cameraStream;
+                        
+                        video.setAttribute('autoplay', '');
+                        video.setAttribute('playsinline', '');
+                        video.setAttribute('muted', '');
+                        
+                        await video.play();
+                        
                         permissionMsg.style.display = 'none';
                         log('Using front camera as fallback');
                     } catch (fallbackErr) {
                         permissionMsg.innerHTML = `
-                            <p>カメラへのアクセスが拒否されました</p>
+                            <p>📵 カメラへのアクセスが拒否されました</p>
                             <p style="font-size: 0.8rem; margin-top: 10px;">
-                                ブラウザの設定でカメラの使用を許可してください
+                                設定アプリ → Safari → カメラ<br>
+                                でアクセスを許可してください
                             </p>
+                            <button class="camera-permission-button" onclick="location.reload()">
+                                再読み込み
+                            </button>
                         `;
-                        log(`Camera access denied: ${fallbackErr}`);
+                        log(`Camera access denied: ${fallbackErr.message}`);
                     }
                 }
             },
@@ -630,9 +739,14 @@
              */
             stopCamera() {
                 if (this.cameraStream) {
-                    this.cameraStream.getTracks().forEach(track => track.stop());
+                    this.cameraStream.getTracks().forEach(track => {
+                        track.stop();
+                    });
                     this.cameraStream = null;
-                    document.getElementById('camera-video').srcObject = null;
+                    const video = document.getElementById('camera-video');
+                    if (video) {
+                        video.srcObject = null;
+                    }
                     log('Camera stopped');
                 }
             },
@@ -701,6 +815,11 @@
                 });
                 document.getElementById('show-start-button').addEventListener('click', () => this.showScreen('start'));
                 document.getElementById('reset-stamps-button').addEventListener('click', () => this.resetStamps());
+                
+                // iOS向けのタッチイベント最適化
+                if (this.isIOS) {
+                    document.addEventListener('touchstart', function() {}, {passive: true});
+                }
             },
 
             /**
@@ -763,7 +882,11 @@
                     
                     // ARシーンを再生
                     if (arScene.play && typeof arScene.play === 'function') {
-                        arScene.play();
+                        try {
+                            arScene.play();
+                        } catch (e) {
+                            log('AR scene play error: ' + e.message);
+                        }
                     }
                     
                     // スタンプ獲得エフェクトを表示
@@ -977,9 +1100,9 @@
         };
         
         // ページロード時にアプリケーションを初期化
-        window.onload = function() {
+        window.addEventListener('DOMContentLoaded', function() {
             app.init();
-        };
+        });
 
         // デバッグ用：キーボードショートカット（開発時のみ）
         document.addEventListener('keydown', (e) => {
