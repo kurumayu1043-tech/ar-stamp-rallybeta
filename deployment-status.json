@@ -1,0 +1,21 @@
+{
+  "version": "6.0.1",
+  "timestamp": "2024-08-28T16:35:00Z",
+  "lastCommit": "16ce1a3",
+  "status": "deployed",
+  "changes": [
+    "Aggressive cache busting implemented",
+    "Service Worker v6 with timestamp-based caching",
+    "Force update functionality added",
+    "Deployment verification tools created",
+    ".nojekyll file added",
+    "Network-first strategy for HTML files"
+  ],
+  "testUrls": {
+    "main": "https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/",
+    "version": "https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/version.html",
+    "checkDeployment": "https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/check-deployment.html",
+    "testFile": "https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/test-deployment.txt",
+    "statusJson": "https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/deployment-status.json"
+  }
+}
