@@ -2,55 +2,63 @@
 // ARスタンプラリー 共通JavaScript
 // ========================================
 
-// スタンプデータの定義
+// スタンプデータの定義（2×4のグリッドに最適化された順序）
 const STAMP_DATA = {
     entrance: { 
         name: '入場口', 
         icon: '🏛️',
         description: 'ようこそ文化祭へ！素敵な一日をお過ごしください。',
-        color: '#ffc0cb'
+        color: '#ffc0cb',
+        order: 1
     },
     ticket: { 
         name: '金券売り場', 
         icon: '🎫',
         description: '金券はこちらでお買い求めください。',
-        color: '#98c1d9'
+        color: '#98c1d9',
+        order: 2
     },
     stage: { 
         name: 'ステージ前', 
         icon: '🎭',
         description: 'パフォーマンスをお楽しみください！',
-        color: '#f7e07a'
+        color: '#f7e07a',
+        order: 3
     },
     bunmi1: { 
         name: '文実模擬店１', 
         icon: '🍜',
         description: '美味しい食べ物がいっぱい！',
-        color: '#a9e2a9'
+        color: '#a9e2a9',
+        order: 4
     },
     bunmi2: { 
         name: '文実模擬店２', 
         icon: '🎮',
         description: '楽しいゲームコーナーです。',
-        color: '#d2b4de'
+        color: '#d2b4de',
+        order: 5
     },
     yamato: { 
         name: '庭大和', 
         icon: '🌸',
         description: '和の雰囲気を感じる憩いの空間。',
-        color: '#ffb6c1'
+        color: '#ffb6c1',
+        order: 6
     },
     rhythm: { 
         name: 'リズム館', 
         icon: '🎵',
         description: '音楽の世界へようこそ！',
-        color: '#87ceeb'
+        color: '#87ceeb',
+        order: 7
     },
     gym: { 
         name: '体育館', 
         icon: '🏐',
         description: 'スポーツイベント開催中！',
-        color: '#dda0dd'
+        color: '#dda0dd',
+        order: 8
     }
 };
 
