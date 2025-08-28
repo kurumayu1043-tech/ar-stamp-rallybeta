@@ -1,569 +1,87 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>ARスタンプ収集</title>
-    
-    <!-- A-FrameライブラリをCDNから読み込み -->
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リダイレクト中...</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            overflow: hidden;
-            height: 100vh;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        /* メイン画面 */
-        .container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
             padding: 20px;
-            z-index: 10;
         }
-
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+        }
         h1 {
-            font-size: 2rem;
             margin-bottom: 20px;
-            animation: fadeIn 0.5s ease-out;
         }
-
-        .stamp-icon {
-            width: 150px;
-            height: 150px;
-            margin: 20px auto;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 5rem;
-            animation: stampAnimation 0.8s ease-out;
-        }
-
-        @keyframes stampAnimation {
-            0% {
-                transform: scale(0) rotate(-180deg);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2) rotate(10deg);
-            }
-            100% {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .description {
-            font-size: 1.1rem;
-            margin: 20px 0;
-            opacity: 0.9;
-        }
-
-        .button-group {
-            margin-top: 30px;
-        }
-
-        .action-button {
-            display: inline-block;
-            margin: 10px;
-            padding: 15px 30px;
-            background-color: #ff5e62;
-            color: white;
-            text-decoration: none;
-            border-radius: 30px;
-            font-size: 1.1rem;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
-            -webkit-appearance: none;
-            animation: fadeIn 0.5s ease-out 0.3s both;
-        }
-
-        .action-button:active {
-            transform: scale(0.95);
-        }
-
-        .action-button.secondary {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .action-button.ar-button {
-            background-color: #4CAF50;
-        }
-
-        /* カメラビュー */
-        #camera-view {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-            z-index: 5;
-            background-color: black;
-        }
-
-        #camera-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* ARオーバーレイ */
-        #ar-overlay {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 25px;
-            z-index: 200;
-            text-align: center;
-            display: none;
-        }
-
-        #ar-scene {
-            position: fixed !important;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            z-index: 100;
-            display: none;
-        }
-
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 1.5rem;
-            display: none;
-            cursor: pointer;
-            z-index: 201;
-            -webkit-appearance: none;
+            margin: 20px auto;
+            animation: spin 1s linear infinite;
         }
-
-        .success-message {
-            background: rgba(76, 175, 80, 0.9);
-            padding: 10px 20px;
-            border-radius: 20px;
-            margin: 20px 0;
-            animation: fadeIn 0.5s ease-out 0.5s both;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
-        .stamp-count {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 1rem;
-            z-index: 15;
-        }
-        
-        /* デバッグ情報表示 */
-        .debug-info {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #0f0;
-            padding: 10px;
+        .error {
+            background: rgba(255, 0, 0, 0.2);
+            padding: 20px;
             border-radius: 10px;
-            font-family: monospace;
-            font-size: 0.8rem;
-            z-index: 1000;
-            display: none;
+            margin-top: 20px;
+        }
+        a {
+            color: white;
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="stamp-count" id="stamp-count">0 / 8</div>
-    
-    <div class="container" id="main-container">
-        <h1 id="stamp-title">スタンプを獲得！</h1>
-        <div class="stamp-icon" id="stamp-icon">
-            <!-- アイコンが入る -->
-        </div>
-        <p class="description" id="stamp-description">
-            <!-- 説明が入る -->
-        </p>
-        <div class="success-message" id="success-message" style="display:none;">
-            ✅ スタンプを獲得しました！
-        </div>
-        <div class="button-group">
-            <button class="action-button ar-button" onclick="showAR()">
-                📸 ARで見る
-            </button>
-            <a href="/ar-stamp-rallybeta/" class="action-button secondary">
-                スタンプ一覧へ
-            </a>
+    <div class="container">
+        <h1>🔄 リダイレクト中...</h1>
+        <div class="spinner"></div>
+        <p id="status">新しいページに転送しています...</p>
+        <div id="error-message" style="display:none;" class="error">
+            <p>⚠️ スタンプIDが指定されていません。</p>
+            <p><a href="index.html">ホームページに戻る</a></p>
         </div>
     </div>
-
-    <!-- カメラビュー -->
-    <div id="camera-view">
-        <video id="camera-video" autoplay playsinline muted></video>
-    </div>
-
-    <!-- ARオーバーレイ -->
-    <div id="ar-overlay">
-        <h3 id="ar-location-name">場所名</h3>
-    </div>
-
-    <!-- 戻るボタン -->
-    <button class="back-button" id="back-button" onclick="hideAR()">←</button>
-
-    <!-- A-FrameでAR表示 -->
-    <a-scene id="ar-scene" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-assets>
-            <img id="mascot-image" src="./nisyama1.png" crossorigin="anonymous">
-        </a-assets>
-
-        <a-image 
-            id="mascot-ar-image"
-            src="#mascot-image" 
-            position="0 0 -3" 
-            scale="3 3 1" 
-            look-at="[camera]"
-            transparent="true"
-            animation__position="property: position; from: 0 -1 -3; to: 0 0.5 -3; dur: 2000; easing: easeInOutSine; loop: true; dir: alternate"
-            animation__rotation="property: rotation; from: 0 0 -10; to: 0 0 10; dur: 4000; easing: easeInOutSine; loop: true; dir: alternate"
-            animation__scale="property: scale; from: 3 3 1; to: 3.5 3.5 1; dur: 1500; easing: easeInOutSine; loop: true; dir: alternate">
-        </a-image>
-
-        <a-camera></a-camera>
-    </a-scene>
-    
-    <!-- デバッグ情報 -->
-    <div class="debug-info" id="debug-info"></div>
 
     <script>
-        // デバッグログ関数
-        function debugLog(message) {
-            console.log('[COLLECT]', message);
-            const debugDiv = document.getElementById('debug-info');
-            if (window.location.search.includes('debug=1')) {
-                debugDiv.style.display = 'block';
-                const timestamp = new Date().toTimeString().split(' ')[0];
-                debugDiv.innerHTML = `[${timestamp}] ${message}<br>` + debugDiv.innerHTML;
-                if (debugDiv.innerHTML.split('<br>').length > 10) {
-                    debugDiv.innerHTML = debugDiv.innerHTML.split('<br>').slice(0, 10).join('<br>');
-                }
-            }
+        // URLパラメータからスタンプIDを取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const stampId = urlParams.get('stamp');
+        
+        console.log('collect.htmlリダイレクト: stampId =', stampId);
+        
+        if (stampId) {
+            // 新しいスタンプページにリダイレクト
+            const newUrl = `stamps/${stampId}.html`;
+            document.getElementById('status').textContent = `${stampId}のページに転送しています...`;
+            
+            // 1秒後にリダイレクト
+            setTimeout(() => {
+                window.location.href = newUrl;
+            }, 1000);
+        } else {
+            // スタンプIDがない場合
+            document.getElementById('status').style.display = 'none';
+            document.querySelector('.spinner').style.display = 'none';
+            document.getElementById('error-message').style.display = 'block';
         }
-
-        // スタンプ情報の定義（完全に独立した定義）
-        const stampData = {
-            entrance: { 
-                name: '入場口', 
-                icon: '🏛️',
-                description: 'ようこそ文化祭へ！素敵な一日をお過ごしください。'
-            },
-            ticket: { 
-                name: '金券売り場', 
-                icon: '🎫',
-                description: '金券はこちらでお買い求めください。'
-            },
-            stage: { 
-                name: 'ステージ前', 
-                icon: '🎭',
-                description: 'パフォーマンスをお楽しみください！'
-            },
-            bunmi1: { 
-                name: '文実模擬店１', 
-                icon: '🍜',
-                description: '美味しい食べ物がいっぱい！'
-            },
-            bunmi2: { 
-                name: '文実模擬店２', 
-                icon: '🎮',
-                description: '楽しいゲームコーナーです。'
-            },
-            yamato: { 
-                name: '庭大和', 
-                icon: '🌸',
-                description: '和の雰囲気を感じる憩いの空間。'
-            },
-            rhythm: { 
-                name: 'リズム館', 
-                icon: '🎵',
-                description: '音楽の世界へようこそ！'
-            },
-            gym: { 
-                name: '体育館', 
-                icon: '🏐',
-                description: 'スポーツイベント開催中！'
-            }
-        };
-
-        let currentStamp = null;
-        let cameraStream = null;
-
-        // URLパラメータを安全に取得
-        function getStampIdFromURL() {
-            try {
-                // 複数の方法でURLパラメータを取得
-                const url = new URL(window.location.href);
-                const searchParams = new URLSearchParams(url.search);
-                const stampId = searchParams.get('stamp');
-                
-                debugLog(`URL: ${window.location.href}`);
-                debugLog(`Search: ${url.search}`);
-                debugLog(`Stamp ID from URL: ${stampId}`);
-                
-                return stampId;
-            } catch (e) {
-                debugLog(`URLパラメータ取得エラー: ${e.message}`);
-                // フォールバック: 手動でパースを試みる
-                const match = window.location.search.match(/[?&]stamp=([^&]+)/);
-                const stampId = match ? match[1] : null;
-                debugLog(`Fallback Stamp ID: ${stampId}`);
-                return stampId;
-            }
-        }
-
-        // 初期化
-        function init() {
-            debugLog('=== 初期化開始 ===');
-            
-            // URLからスタンプIDを取得
-            const stampId = getStampIdFromURL();
-            
-            if (!stampId) {
-                debugLog('スタンプIDがURLに含まれていません');
-                showError('URLにスタンプ情報が含まれていません');
-                return;
-            }
-            
-            if (!stampData[stampId]) {
-                debugLog(`無効なスタンプID: ${stampId}`);
-                debugLog(`有効なスタンプID: ${Object.keys(stampData).join(', ')}`);
-                showError(`無効なスタンプID: ${stampId}`);
-                return;
-            }
-            
-            // スタンプ情報を取得して表示
-            currentStamp = stampId;
-            const stamp = stampData[stampId];
-            
-            debugLog(`処理中のスタンプ: ${stampId} - ${stamp.name}`);
-            
-            // UI更新
-            updateUI(stamp);
-            
-            // スタンプを保存
-            const saved = saveStamp(stampId);
-            
-            // スタンプ数を更新
-            updateStampCount();
-            
-            // 成功メッセージ表示
-            if (saved) {
-                setTimeout(() => {
-                    document.getElementById('success-message').style.display = 'block';
-                }, 500);
-            }
-            
-            debugLog('=== 初期化完了 ===');
-        }
-
-        // UI更新
-        function updateUI(stamp) {
-            document.getElementById('stamp-title').textContent = stamp.name + 'のスタンプ';
-            document.getElementById('stamp-icon').textContent = stamp.icon;
-            document.getElementById('stamp-description').textContent = stamp.description;
-            document.getElementById('ar-location-name').textContent = stamp.name;
-            
-            debugLog(`UI更新: ${stamp.name}`);
-        }
-
-        // エラー表示
-        function showError(message) {
-            document.getElementById('stamp-title').textContent = 'エラー';
-            document.getElementById('stamp-icon').textContent = '❌';
-            document.getElementById('stamp-description').textContent = message;
-            document.querySelector('.ar-button').style.display = 'none';
-        }
-
-        // スタンプを保存
-        function saveStamp(stampId) {
-            try {
-                debugLog(`スタンプ保存開始: ${stampId}`);
-                
-                // 既存のスタンプデータを取得
-                const existingData = localStorage.getItem('arStamps2024');
-                const stamps = existingData ? JSON.parse(existingData) : {};
-                
-                debugLog(`既存データ: ${JSON.stringify(stamps)}`);
-                
-                // 新規スタンプかチェック
-                const isNew = !stamps[stampId];
-                
-                // スタンプを記録
-                stamps[stampId] = { 
-                    collected: true,
-                    timestamp: new Date().toISOString()
-                };
-                
-                // 保存
-                const saveData = JSON.stringify(stamps);
-                localStorage.setItem('arStamps2024', saveData);
-                
-                debugLog(`保存データ: ${saveData}`);
-                debugLog(`スタンプ保存完了: ${stampId} (新規: ${isNew})`);
-                
-                return isNew;
-            } catch (e) {
-                debugLog(`スタンプ保存エラー: ${e.message}`);
-                console.error('スタンプ保存エラー:', e);
-                return false;
-            }
-        }
-
-        // スタンプ数を更新
-        function updateStampCount() {
-            try {
-                const stamps = JSON.parse(localStorage.getItem('arStamps2024') || '{}');
-                const collectedCount = Object.keys(stamps).filter(key => stamps[key].collected).length;
-                document.getElementById('stamp-count').textContent = `${collectedCount} / 8`;
-                
-                debugLog(`スタンプ数: ${collectedCount} / 8`);
-            } catch (e) {
-                debugLog(`スタンプ数取得エラー: ${e.message}`);
-                console.error('スタンプ数取得エラー:', e);
-            }
-        }
-
-        // AR表示
-        async function showAR() {
-            if (!currentStamp) {
-                debugLog('AR表示エラー: スタンプが設定されていません');
-                return;
-            }
-            
-            debugLog(`AR表示: ${currentStamp}`);
-            
-            document.getElementById('main-container').style.display = 'none';
-            document.getElementById('camera-view').style.display = 'block';
-            document.getElementById('ar-scene').style.display = 'block';
-            document.getElementById('ar-overlay').style.display = 'block';
-            document.getElementById('back-button').style.display = 'block';
-            
-            // カメラ起動
-            try {
-                const video = document.getElementById('camera-video');
-                const constraints = {
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
-                };
-                
-                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = cameraStream;
-                
-                // A-Frame再生
-                const arScene = document.getElementById('ar-scene');
-                if (arScene.play) {
-                    arScene.play();
-                }
-                
-                debugLog('AR表示成功');
-            } catch (err) {
-                debugLog(`カメラエラー: ${err.message}`);
-                console.error('カメラエラー:', err);
-                
-                // フロントカメラで再試行
-                try {
-                    const video = document.getElementById('camera-video');
-                    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-                    video.srcObject = cameraStream;
-                } catch (e) {
-                    alert('カメラを起動できませんでした。');
-                    hideAR();
-                }
-            }
-        }
-
-        // AR非表示
-        function hideAR() {
-            debugLog('AR非表示');
-            
-            document.getElementById('main-container').style.display = 'flex';
-            document.getElementById('camera-view').style.display = 'none';
-            document.getElementById('ar-scene').style.display = 'none';
-            document.getElementById('ar-overlay').style.display = 'none';
-            document.getElementById('back-button').style.display = 'none';
-            
-            // カメラ停止
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            
-            // A-Frame停止
-            const arScene = document.getElementById('ar-scene');
-            if (arScene.pause) {
-                arScene.pause();
-            }
-        }
-
-        // 初期化実行
-        window.addEventListener('DOMContentLoaded', () => {
-            debugLog('ページ読み込み完了');
-            init();
-        });
-
-        // エラーハンドリング
-        window.addEventListener('error', (e) => {
-            debugLog(`グローバルエラー: ${e.message}`);
-        });
     </script>
 </body>
 </html>

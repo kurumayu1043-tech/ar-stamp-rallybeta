@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRコードURL検証</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .info-box {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #007bff;
+        }
+        .url-list {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .url-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        .test-link {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .test-link:hover {
+            background: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 QRコードURL検証ページ</h1>
+    
+    <div class="info-box">
+        <h2>現在の問題</h2>
+        <p>QRコードを読み取ると、全て<code>collect.html</code>に飛ばされてしまい、入場口のスタンプのみが押される。</p>
+        <p>このページで、正しいURLが生成されているか確認します。</p>
+    </div>
+
+    <h2>✅ 正しいURL（新システム）</h2>
+    <div class="url-list">
+        <div id="correct-urls"></div>
+    </div>
+
+    <h2>❌ 間違ったURL（旧システム）</h2>
+    <div class="url-list">
+        <div id="incorrect-urls"></div>
+    </div>
+
+    <h2>📊 URL比較表</h2>
+    <table id="comparison-table">
+        <thead>
+            <tr>
+                <th>スタンプ名</th>
+                <th>正しいURL（stamps/）</th>
+                <th>間違ったURL（collect.html）</th>
+                <th>テストリンク</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+
+    <h2>🧪 QRコード生成ツールの状態</h2>
+    <div id="qr-tool-status"></div>
+
+    <script>
+        const stamps = [
+            { id: 'entrance', name: '入場口' },
+            { id: 'ticket', name: '金券売り場' },
+            { id: 'stage', name: 'ステージ前' },
+            { id: 'bunmi1', name: '文実模擬店１' },
+            { id: 'bunmi2', name: '文実模擬店２' },
+            { id: 'yamato', name: '庭大和' },
+            { id: 'rhythm', name: 'リズム館' },
+            { id: 'gym', name: '体育館' }
+        ];
+
+        const baseUrlNew = 'https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps';
+        const baseUrlOld = 'https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html';
+
+        // 正しいURLを表示
+        const correctDiv = document.getElementById('correct-urls');
+        stamps.forEach(stamp => {
+            const url = `${baseUrlNew}/${stamp.id}.html`;
+            const div = document.createElement('div');
+            div.className = 'url-item correct';
+            div.innerHTML = `<strong>${stamp.name}:</strong> ${url}`;
+            correctDiv.appendChild(div);
+        });
+
+        // 間違ったURLを表示
+        const incorrectDiv = document.getElementById('incorrect-urls');
+        stamps.forEach(stamp => {
+            const url = `${baseUrlOld}?stamp=${stamp.id}`;
+            const div = document.createElement('div');
+            div.className = 'url-item incorrect';
+            div.innerHTML = `<strong>${stamp.name}:</strong> ${url}`;
+            incorrectDiv.appendChild(div);
+        });
+
+        // 比較表を作成
+        const tableBody = document.getElementById('table-body');
+        stamps.forEach(stamp => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${stamp.name}</strong></td>
+                <td style="color: green;">${baseUrlNew}/${stamp.id}.html</td>
+                <td style="color: red;">${baseUrlOld}?stamp=${stamp.id}</td>
+                <td>
+                    <a href="stamps/${stamp.id}.html" class="test-link" target="_blank">新システム</a>
+                    <a href="collect.html?stamp=${stamp.id}" class="test-link" target="_blank" style="background: #dc3545;">旧システム</a>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // QRコード生成ツールの状態を確認
+        const statusDiv = document.getElementById('qr-tool-status');
+        
+        // QRコード生成ツールのURLを取得してチェック
+        fetch('qr-generator.html')
+            .then(response => response.text())
+            .then(html => {
+                const hasStampsUrl = html.includes('stamps/');
+                const hasCollectUrl = html.includes('collect.html?stamp=');
+                
+                let status = '<div style="padding: 15px; border-radius: 5px; ';
+                if (hasStampsUrl && !hasCollectUrl) {
+                    status += 'background: #d4edda; color: #155724;">';
+                    status += '✅ QRコード生成ツールは新しいURL（stamps/）を使用しています。';
+                } else if (!hasStampsUrl && hasCollectUrl) {
+                    status += 'background: #f8d7da; color: #721c24;">';
+                    status += '❌ QRコード生成ツールは古いURL（collect.html）を使用しています。';
+                } else {
+                    status += 'background: #fff3cd; color: #856404;">';
+                    status += '⚠️ QRコード生成ツールに両方のURLが含まれています。';
+                }
+                status += '</div>';
+                
+                statusDiv.innerHTML = status;
+                
+                // 詳細情報
+                const details = document.createElement('div');
+                details.style.marginTop = '10px';
+                details.innerHTML = `
+                    <p><strong>検出結果:</strong></p>
+                    <ul>
+                        <li>stamps/ディレクトリ: ${hasStampsUrl ? '✅ 検出' : '❌ 未検出'}</li>
+                        <li>collect.html: ${hasCollectUrl ? '⚠️ 検出（削除が必要）' : '✅ 未検出'}</li>
+                    </ul>
+                `;
+                statusDiv.appendChild(details);
+            })
+            .catch(err => {
+                statusDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">エラー: QRコード生成ツールの確認に失敗しました。</div>';
+            });
+    </script>
+</body>
+</html>
