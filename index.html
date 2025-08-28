@@ -651,18 +651,10 @@
                 const stampParam = urlParams.get('stamp');
                 
                 if (stampParam) {
-                    // index.htmlにstampパラメータが来るのは通常ありえない
-                    // collect.htmlを使うべきなので、警告を出す
-                    log(`警告: index.htmlにstampパラメータが渡されました: stamp=${stampParam}`);
-                    log(`正しいURL: collect.html?stamp=${stampParam}`);
-                    
-                    // URLをクリーンにする（パラメータを削除）
-                    const cleanUrl = window.location.origin + window.location.pathname;
-                    window.history.replaceState({}, document.title, cleanUrl);
-                    
-                    // collect.htmlにリダイレクトする
-                    // window.location.href = `collect.html?stamp=${stampParam}`;
-                    // return;
+                    // index.htmlでstampパラメータを受け取ったらcollect.htmlへリダイレクト
+                    log(`index.htmlにstampパラメータを検出: ${stampParam} -> collect.htmlに転送`);
+                    window.location.replace(`collect.html?stamp=${encodeURIComponent(stampParam)}`);
+                    return;
                 }
                 
                 // セッションストレージからペンディングスタンプを復元

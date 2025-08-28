@@ -1,9 +1,10 @@
 // Service Worker for AR Stamp Rally PWA
-const CACHE_NAME = 'ar-stamp-v2';
+const CACHE_NAME = 'ar-stamp-v3';
 const BASE_URL = '/ar-stamp-rallybeta/';
 const urlsToCache = [
   BASE_URL,
   BASE_URL + 'index.html',
+  BASE_URL + 'collect.html',
   BASE_URL + 'nisyama1.png',
   BASE_URL + 'manifest.json',
   'https://aframe.io/releases/1.4.0/aframe.min.js'
@@ -43,38 +44,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // スタンプパラメータ付きのURLの場合
-  if (url.pathname.includes('/ar-stamp-rallybeta') && url.searchParams.has('stamp')) {
-    // パラメータを保持したままindex.htmlを返す
-    event.respondWith(
-      caches.match(BASE_URL + 'index.html')
-        .then(response => {
-          if (response) {
-            // キャッシュされたindex.htmlを返す
-            // JavaScriptがパラメータを処理する
-            return response;
-          }
-          // キャッシュにない場合はネットワークから取得
-          return fetch(BASE_URL + 'index.html')
-            .then(response => {
-              // 成功したらキャッシュに追加
-              if (response && response.status === 200) {
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME)
-                  .then(cache => {
-                    cache.put(BASE_URL + 'index.html', responseToCache);
-                  });
-              }
-              return response;
-            });
-        })
-        .catch(() => {
-          // オフライン時もindex.htmlを返す
-          return caches.match(BASE_URL + 'index.html');
-        })
-    );
-    return;
-  }
+
   
   // 通常のリクエスト処理
   event.respondWith(
