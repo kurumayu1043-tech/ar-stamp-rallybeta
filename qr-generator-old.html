@@ -5,45 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QRコード生成ツール - 文化祭ARスタンプラリー</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="css/style.css">
     <style>
-        body {
-            background: white;
-            color: #333;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .qr-container {
-            max-width: 1200px;
-            margin: 0 auto;
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
         }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+        
+        .info {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
         .qr-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
-            margin-top: 30px;
         }
+        
         .qr-item {
             background: white;
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-top: 5px solid;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
+        
         .qr-item h2 {
             color: #333;
             margin-bottom: 10px;
             font-size: 1.5rem;
         }
-        .qr-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
+        
         .qr-description {
             color: #666;
             margin-bottom: 15px;
             font-size: 0.9rem;
         }
+        
         .qr-code {
             display: inline-block;
             padding: 20px;
@@ -52,6 +72,7 @@
             border-radius: 10px;
             margin: 15px 0;
         }
+        
         .qr-url {
             background: #f5f5f5;
             padding: 10px;
@@ -60,8 +81,8 @@
             word-break: break-all;
             margin-top: 10px;
             color: #666;
-            font-family: monospace;
         }
+        
         .download-btn {
             background: #ff5e62;
             color: white;
@@ -73,9 +94,11 @@
             font-size: 1rem;
             transition: background 0.3s;
         }
+        
         .download-btn:hover {
             background: #ff4a4e;
         }
+        
         .instructions {
             background: #ffffcc;
             padding: 15px;
@@ -83,11 +106,12 @@
             margin-bottom: 20px;
             border-left: 5px solid #ffcc00;
         }
+        
         @media print {
             body {
                 background: white;
             }
-            .instructions, .download-btn {
+            .info, .instructions, .download-btn {
                 display: none;
             }
             .qr-item {
@@ -99,19 +123,19 @@
     </style>
 </head>
 <body>
-    <div class="qr-container">
-        <h1 style="text-align: center; color: #667eea;">🎪 文化祭ARスタンプラリー QRコード一覧</h1>
+    <div class="container">
+        <h1>🎪 文化祭ARスタンプラリー QRコード一覧</h1>
+        
+        <div class="info">
+            <h2>使い方</h2>
+            <p>1. 下記のQRコードを印刷して各場所に設置してください</p>
+            <p>2. 参加者はスマホのカメラアプリでQRコードを読み取ります</p>
+            <p>3. 表示されたリンクをタップするとスタンプが獲得できます</p>
+        </div>
         
         <div class="instructions">
-            <h2>📝 使い方</h2>
-            <ol>
-                <li>下記のQRコードを印刷して各場所に設置してください</li>
-                <li>参加者はスマホのカメラアプリでQRコードを読み取ります</li>
-                <li>表示されたリンクをタップするとスタンプが獲得できます</li>
-                <li>各ページは独立しているので、新しいタブで開いても正しく動作します</li>
-            </ol>
-            <p style="margin-top: 15px;"><strong>⚠️ 設置時の注意事項：</strong></p>
-            <ul style="margin-left: 20px;">
+            <strong>⚠️ 設置時の注意事項：</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
                 <li>A4サイズで印刷すると見やすいサイズになります</li>
                 <li>防水対策としてラミネート加工を推奨します</li>
                 <li>目立つ場所に設置し、「ARスタンプラリー」の案内を併記してください</li>
@@ -123,30 +147,79 @@
         </div>
     </div>
     
-    <script src="js/stamp-rally.js"></script>
     <script>
-        // ベースURL（GitHub Pages用）
-        const baseUrl = 'https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps';
+        // スタンプ情報
+        const stamps = [
+            {
+                id: 'entrance',
+                name: '入場口',
+                description: 'ようこそ文化祭へ！',
+                color: '#ffc0cb'
+            },
+            {
+                id: 'ticket',
+                name: '金券売り場',
+                description: '金券はこちらで',
+                color: '#98c1d9'
+            },
+            {
+                id: 'stage',
+                name: 'ステージ前',
+                description: 'パフォーマンスを楽しもう',
+                color: '#f7e07a'
+            },
+            {
+                id: 'bunmi1',
+                name: '文実模擬店１',
+                description: '美味しい食べ物がいっぱい',
+                color: '#a9e2a9'
+            },
+            {
+                id: 'bunmi2',
+                name: '文実模擬店２',
+                description: '楽しいゲームコーナー',
+                color: '#d2b4de'
+            },
+            {
+                id: 'yamato',
+                name: '庭大和',
+                description: '憩いの空間',
+                color: '#ffb6c1'
+            },
+            {
+                id: 'rhythm',
+                name: 'リズム館',
+                description: '音楽の世界へ',
+                color: '#87ceeb'
+            },
+            {
+                id: 'gym',
+                name: '体育館',
+                description: 'スポーツイベント開催中',
+                color: '#dda0dd'
+            }
+        ];
+        
+        // ベースURL（collect.htmlを使用）
+        const baseUrl = 'https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html';
         
         // QRコードを生成
         const qrGrid = document.getElementById('qr-grid');
         
-        Object.keys(STAMP_DATA).forEach((stampId, index) => {
-            const stamp = STAMP_DATA[stampId];
-            const url = `${baseUrl}/${stampId}.html`;
+        stamps.forEach((stamp, index) => {
+            const url = `${baseUrl}?stamp=${stamp.id}`;
             
             // QRコードコンテナを作成
             const qrItem = document.createElement('div');
             qrItem.className = 'qr-item';
-            qrItem.style.borderTopColor = stamp.color;
+            qrItem.style.borderTop = `5px solid ${stamp.color}`;
             
             qrItem.innerHTML = `
                 <h2>${index + 1}. ${stamp.name}</h2>
-                <div class="qr-icon">${stamp.icon}</div>
                 <div class="qr-description">${stamp.description}</div>
-                <div class="qr-code" id="qr-${stampId}"></div>
+                <div class="qr-code" id="qr-${stamp.id}"></div>
                 <div class="qr-url">${url}</div>
-                <button class="download-btn" onclick="downloadQR('qr-${stampId}', '${stamp.name}')">
+                <button class="download-btn" onclick="downloadQR('qr-${stamp.id}', '${stamp.name}')">
                     画像をダウンロード
                 </button>
             `;
@@ -154,7 +227,7 @@
             qrGrid.appendChild(qrItem);
             
             // QRコードを生成
-            new QRCode(document.getElementById(`qr-${stampId}`), {
+            new QRCode(document.getElementById(`qr-${stamp.id}`), {
                 text: url,
                 width: 256,
                 height: 256,
@@ -175,8 +248,8 @@
             }
         }
         
-        // 印刷
-        window.printQRCodes = function() {
+        // 全QRコードを一括ダウンロード（印刷用）
+        window.print = function() {
             window.print();
         }
     </script>
