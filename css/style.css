@@ -126,9 +126,32 @@ body {
 }
 
 .stamp-icon {
-    font-size: 3rem;
-    margin-bottom: 10px;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 10px;
     display: block;
+    position: relative;
+}
+
+.stamp-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: grayscale(100%) opacity(0.3);
+    transition: filter 0.3s ease;
+}
+
+.stamp-item.collected .stamp-icon img {
+    filter: grayscale(0%) opacity(1);
+}
+
+.stamp-icon .stamp-emoji {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    opacity: 0.5;
 }
 
 .stamp-name {

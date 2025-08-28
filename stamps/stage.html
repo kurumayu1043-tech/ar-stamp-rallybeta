@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ステージ前 - ARスタンプラリー</title>
+    <title>入場口 - ARスタンプラリー</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="../css/style.css?v=3">
+    <link rel="stylesheet" href="../css/style.css?v=4">
     <style>
         .auto-stamp-page {
             min-height: 100vh;
@@ -21,8 +21,26 @@
             color: white;
         }
         
-        .stamp-animation {
+        .stamp-image-container {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             animation: stampEffect 1s ease-out;
+        }
+        
+        .stamp-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            animation: stampRotate 0.8s ease-out;
         }
         
         @keyframes stampEffect {
@@ -39,10 +57,58 @@
             }
         }
         
+        @keyframes stampRotate {
+            0% {
+                transform: rotate(-360deg) scale(0);
+            }
+            100% {
+                transform: rotate(0deg) scale(1);
+            }
+        }
+        
+        .stamp-mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 3rem;
+            color: #ff0000;
+            font-weight: bold;
+            opacity: 0;
+            animation: stampMark 0.5s ease-out 0.8s forwards;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+        
+        @keyframes stampMark {
+            0% {
+                transform: translate(-50%, -50%) rotate(-15deg) scale(3);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(-15deg) scale(1);
+                opacity: 0.8;
+            }
+        }
+        
+        .location-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #f7e07a;
+            color: #333;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
         .success-check {
             font-size: 5rem;
             color: #4CAF50;
-            animation: checkmark 0.5s ease-out 0.5s both;
+            animation: checkmark 0.5s ease-out 1s both;
         }
         
         @keyframes checkmark {
@@ -97,14 +163,27 @@
                 opacity: 1;
             }
         }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="auto-stamp-page">
-        <h1 class="stamp-get-title">ステージ前のスタンプ</h1>
+        <div class="location-badge">ステージ前</div>
+        <h1 class="stamp-get-title">スタンプゲット！</h1>
         
-        <div class="stamp-get-icon stamp-animation" style="background: #f7e07a20;">
-            🎭
+        <div class="stamp-image-container">
+            <img src="../nisyama1.png" alt="西山さんスタンプ" class="stamp-image">
+            <div class="stamp-mark">GET!</div>
         </div>
         
         <div class="success-check">✅</div>

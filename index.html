@@ -93,7 +93,10 @@
                 item.style.borderTop = `3px solid ${stamp.color}`;
                 
                 item.innerHTML = `
-                    <span class="stamp-icon">${stamp.icon}</span>
+                    <div class="stamp-icon">
+                        <img src="nisyama1.png" alt="スタンプ">
+                        ${!isCollected ? `<span class="stamp-emoji">${stamp.icon}</span>` : ''}
+                    </div>
                     <div class="stamp-name">${stamp.name}</div>
                     <div class="stamp-status">${isCollected ? '✅ 獲得済み' : '未獲得'}</div>
                 `;
