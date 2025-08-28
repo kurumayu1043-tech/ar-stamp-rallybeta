@@ -98,12 +98,9 @@
                     <div class="stamp-status">${isCollected ? '✅ 獲得済み' : '未獲得'}</div>
                 `;
                 
-                // 獲得済みスタンプをクリックでAR表示
+                // 獲得済みスタンプをクリック（現在は何もしない）
                 if (isCollected) {
-                    item.onclick = () => {
-                        // スタンプページに遷移（AR表示モード）
-                        window.location.href = `stamps/${stampId}.html?mode=ar`;
-                    };
+                    item.style.cursor = 'default';
                 }
                 
                 grid.appendChild(item);

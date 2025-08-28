@@ -7,159 +7,208 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="../css/style.css?v=2">
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <link rel="stylesheet" href="../css/style.css?v=3">
+    <style>
+        .auto-stamp-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .stamp-animation {
+            animation: stampEffect 1s ease-out;
+        }
+        
+        @keyframes stampEffect {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(10deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        .success-check {
+            font-size: 5rem;
+            color: #4CAF50;
+            animation: checkmark 0.5s ease-out 0.5s both;
+        }
+        
+        @keyframes checkmark {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .redirect-message {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            animation: fadeIn 0.5s ease-out 1s both;
+        }
+        
+        .progress-dots {
+            margin-top: 20px;
+        }
+        
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin: 0 5px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="stamp-page">
+    <div class="auto-stamp-page">
         <h1 class="stamp-get-title">リズム館のスタンプ</h1>
         
-        <div class="stamp-get-icon" style="background: #87ceeb20;">
+        <div class="stamp-get-icon stamp-animation" style="background: #87ceeb20;">
             🎵
         </div>
+        
+        <div class="success-check">✅</div>
         
         <p class="stamp-get-description">
             ようこそ文化祭へ！<br>
             素敵な一日をお過ごしください。
         </p>
         
-        <div class="success-message" id="success-message" style="display:none;">
-            ✅ スタンプを獲得しました！
+        <div class="success-message" style="margin-top: 20px;">
+            <strong>スタンプを獲得しました！</strong>
         </div>
         
-        <div class="button-group">
-            <button class="button success" onclick="showAR()">
-                📸 ARカメラで撮影
-            </button>
+        <div class="redirect-message">
+            <p id="redirect-text">3秒後にホームに戻ります...</p>
+            <div class="progress-dots">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px;">
             <a href="../index.html" class="button secondary">
-                🏠 ホームに戻る
+                今すぐホームに戻る
             </a>
         </div>
     </div>
 
-    <!-- ARビュー -->
-    <div class="camera-view" id="camera-view" style="display:none;">
-        <video id="camera-video" autoplay playsinline muted></video>
-    </div>
-
-    <div class="ar-overlay" id="ar-overlay" style="display:none;">
-        <h3>リズム館</h3>
-    </div>
-
-    <button class="back-button" id="back-button" onclick="hideAR()" style="display:none;">
-        ←
-    </button>
-
-    <a-scene id="ar-scene" embedded vr-mode-ui="enabled: false" style="display:none;">
-        <a-assets>
-            <img id="mascot" src="../nisyama1.png" crossorigin="anonymous">
-        </a-assets>
-        <a-image 
-            src="#mascot" 
-            position="0 0 -3" 
-            scale="3 3 1" 
-            look-at="[camera]"
-            animation__float="property: position; from: 0 -0.5 -3; to: 0 0.5 -3; dur: 2000; easing: easeInOutSine; loop: true; dir: alternate"
-            animation__rotate="property: rotation; from: 0 0 -5; to: 0 0 5; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate">
-        </a-image>
-        <a-camera></a-camera>
-    </a-scene>
-
     <script src="../js/stamp-rally.js"></script>
     <script>
         const STAMP_ID = 'rhythm';
-        let cameraStream = null;
-
+        const STAMP_NAME = 'リズム館';
+        const REDIRECT_DELAY = 3000; // 3秒後にリダイレクト
+        
         // ページ読み込み時の処理
         document.addEventListener('DOMContentLoaded', () => {
+            console.log(`===== スタンプ自動取得: ${STAMP_NAME} =====`);
+            
             // スタンプを収集
             const isNew = stampRally.collectStamp(STAMP_ID);
             
-            // 成功メッセージを表示
             if (isNew) {
-                document.getElementById('success-message').style.display = 'block';
+                console.log(`✅ 新しいスタンプを獲得: ${STAMP_NAME}`);
+                
+                // サウンド効果（対応ブラウザのみ）
+                try {
+                    const audio = new Audio('data:audio/wav;base64,UklGRm4FAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoFAAA=');
+                    audio.play().catch(() => {}); // エラーは無視
+                } catch (e) {}
+            } else {
+                console.log(`ℹ️ 既に獲得済みのスタンプ: ${STAMP_NAME}`);
+                document.querySelector('.success-message strong').textContent = 'このスタンプは既に獲得済みです';
             }
-
-            // デバッグログ
-            debugLog(`スタンプページ読み込み: ${STAMP_ID}`);
-            debugLog(`新規スタンプ: ${isNew}`);
-            debugLog(`収集済みスタンプ数: ${stampRally.getCollectedCount()}`);
-
-            // URLパラメータでARモードの場合
-            if (getUrlParam('mode') === 'ar') {
-                setTimeout(() => showAR(), 500);
+            
+            // 収集状況をログ出力
+            const collected = stampRally.getCollectedCount();
+            const total = Object.keys(STAMP_DATA).length;
+            console.log(`📊 現在の収集状況: ${collected} / ${total}`);
+            
+            // 全スタンプ収集チェック
+            if (stampRally.isAllCollected()) {
+                console.log('🎉 全スタンプコンプリート！');
+                document.getElementById('redirect-text').textContent = 'おめでとうございます！全スタンプ達成！3秒後にホームに戻ります...';
+            }
+            
+            // カウントダウン表示
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    document.getElementById('redirect-text').textContent = `${countdown}秒後にホームに戻ります...`;
+                }
+            }, 1000);
+            
+            // 自動リダイレクト
+            setTimeout(() => {
+                clearInterval(countdownInterval);
+                console.log('🔄 ホームページにリダイレクト');
+                window.location.href = '../index.html';
+            }, REDIRECT_DELAY);
+            
+            // デバッグモードの場合、詳細情報を表示
+            if (getUrlParam('debug') === '1') {
+                debugLog(`スタンプID: ${STAMP_ID}`);
+                debugLog(`新規取得: ${isNew}`);
+                debugLog(`収集済み: ${collected}/${total}`);
+                debugLog(`localStorage: ${JSON.stringify(stampRally.stamps)}`);
             }
         });
-
-        // AR表示
-        async function showAR() {
-            debugLog('AR表示開始');
-            
-            document.querySelector('.stamp-page').style.display = 'none';
-            document.getElementById('camera-view').style.display = 'block';
-            document.getElementById('ar-scene').style.display = 'block';
-            document.getElementById('ar-overlay').style.display = 'block';
-            document.getElementById('back-button').style.display = 'block';
-
-            try {
-                const video = document.getElementById('camera-video');
-                const constraints = {
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
-                };
-                
-                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = cameraStream;
-                
-                const arScene = document.getElementById('ar-scene');
-                if (arScene.play) {
-                    arScene.play();
-                }
-            } catch (err) {
-                console.error('カメラエラー:', err);
-                
-                // フロントカメラで再試行
-                try {
-                    const video = document.getElementById('camera-video');
-                    cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: 'user' } 
-                    });
-                    video.srcObject = cameraStream;
-                } catch (e) {
-                    alert('カメラを起動できませんでした');
-                    hideAR();
-                }
-            }
-        }
-
-        // AR非表示
-        function hideAR() {
-            debugLog('AR非表示');
-            
-            document.querySelector('.stamp-page').style.display = 'flex';
-            document.getElementById('camera-view').style.display = 'none';
-            document.getElementById('ar-scene').style.display = 'none';
-            document.getElementById('ar-overlay').style.display = 'none';
-            document.getElementById('back-button').style.display = 'none';
-
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-
-            const arScene = document.getElementById('ar-scene');
-            if (arScene.pause) {
-                arScene.pause();
-            }
-        }
-
-        // ページを離れる時
+        
+        // ページ離脱時のログ
         window.addEventListener('beforeunload', () => {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
+            console.log(`ページを離れます: ${STAMP_NAME}`);
+        });
+        
+        // タブがバックグラウンドになった時
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('タブがバックグラウンドになりました');
+            } else {
+                console.log('タブがアクティブになりました');
+                // 最新の状態を再読み込み
+                stampRally.loadStamps();
             }
         });
     </script>
