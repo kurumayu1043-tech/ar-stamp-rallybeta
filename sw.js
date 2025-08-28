@@ -1,12 +1,14 @@
 // Service Worker for AR Stamp Rally PWA
-const CACHE_NAME = 'ar-stamp-v2';
+// キャッシュバージョンを更新（変更日時: 2024-08-28）
+const CACHE_NAME = 'ar-stamp-v5-20240828';
 const BASE_URL = '/ar-stamp-rallybeta/';
 const urlsToCache = [
   BASE_URL,
   BASE_URL + 'index.html',
+  BASE_URL + 'css/style.css',
+  BASE_URL + 'js/stamp-rally.js',
   BASE_URL + 'nisyama1.png',
-  BASE_URL + 'manifest.json',
-  'https://aframe.io/releases/1.4.0/aframe.min.js'
+  BASE_URL + 'manifest.json'
 ];
 
 // インストール時にキャッシュ
