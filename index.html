@@ -6,10 +6,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="ARスタンプ">
-    <!-- キャッシュ制御 -->
+    <!-- 強力なキャッシュ制御 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Last-Modified" content="0">
+    <meta http-equiv="ETag" content="">
     <title>文化祭 ARスタンプラリー</title>
     
     <!-- iOS用アイコン -->
@@ -18,8 +20,8 @@
     <!-- PWA対応のためのマニフェスト -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- スタイルシート -->
-    <link rel="stylesheet" href="css/style.css?v=20240828">
+    <!-- スタイルシート - タイムスタンプ付き -->
+    <link rel="stylesheet" href="css/style.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <div class="container">
@@ -55,9 +57,17 @@
             <button class="button info" onclick="showInstructions()">
                 📖 使い方
             </button>
-            <button class="button secondary" onclick="resetStamps()">
-                🔄 リセット
+            <button class="button warning" onclick="forceUpdate()">
+                🔄 最新版に更新
             </button>
+            <button class="button secondary" onclick="resetStamps()">
+                🗑️ リセット
+            </button>
+        </div>
+
+        <!-- デバッグ情報 -->
+        <div style="text-align: center; margin: 20px; font-size: 0.8rem; color: #999;">
+            Version: <span id="version-info">Loading...</span>
         </div>
     </div>
 
@@ -78,11 +88,20 @@
         </div>
     </div>
 
-    <!-- 共通JavaScript -->
-    <script src="js/stamp-rally.js?v=20240828"></script>
+    <!-- 共通JavaScript - タイムスタンプ付き -->
+    <script>
+        // 動的にタイムスタンプを追加
+        const scriptTag = document.createElement('script');
+        scriptTag.src = 'js/stamp-rally.js?v=' + Date.now();
+        document.head.appendChild(scriptTag);
+    </script>
     
     <!-- ページ固有のJavaScript -->
     <script>
+        // バージョン情報を表示
+        const VERSION = '6.0.0-' + new Date().toISOString().slice(0, 10);
+        document.getElementById('version-info').textContent = VERSION;
+
         // スタンプグリッドを描画
         function renderStamps() {
             const grid = document.getElementById('stamp-grid');
@@ -126,7 +145,6 @@
             // 全スタンプ収集時
             if (stampRally.isAllCollected()) {
                 document.getElementById('complete-message').style.display = 'block';
-                confetti(); // お祝いエフェクト（実装は省略）
             }
         }
 
@@ -139,6 +157,34 @@
             }
         }
 
+        // 強制更新
+        async function forceUpdate() {
+            console.log('強制更新を開始...');
+            
+            // Service Workerを更新
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                    console.log('Service Worker unregistered');
+                }
+                
+                // すべてのキャッシュをクリア
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => {
+                            console.log('Deleting cache:', cacheName);
+                            return caches.delete(cacheName);
+                        })
+                    );
+                }
+            }
+            
+            // ページをリロード（キャッシュを無視）
+            window.location.reload(true);
+        }
+
         // 使い方を表示
         function showInstructions() {
             document.getElementById('instructions-modal').style.display = 'block';
@@ -146,6 +192,51 @@
 
         function closeInstructions() {
             document.getElementById('instructions-modal').style.display = 'none';
+        }
+
+        // Service Worker更新チェック
+        async function checkServiceWorkerUpdate() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('sw.js', {
+                        updateViaCache: 'none'  // キャッシュを無視して更新をチェック
+                    });
+                    
+                    console.log('Service Worker registered:', registration);
+                    
+                    // 更新チェック
+                    registration.addEventListener('updatefound', () => {
+                        console.log('Service Worker update found!');
+                        const newWorker = registration.installing;
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('New Service Worker installed, reloading page...');
+                                // 新しいService Workerがインストールされたらページをリロード
+                                setTimeout(() => {
+                                    window.location.reload(true);
+                                }, 1000);
+                            }
+                        });
+                    });
+                    
+                    // 手動で更新をチェック
+                    await registration.update();
+                    
+                    // Service Workerからのメッセージを受信
+                    navigator.serviceWorker.addEventListener('message', event => {
+                        console.log('Message from Service Worker:', event.data);
+                        if (event.data.type === 'SW_ACTIVATED') {
+                            console.log('New Service Worker activated, version:', event.data.version);
+                            document.getElementById('version-info').textContent = 
+                                VERSION + ' (SW:' + event.data.version + ')';
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Service Worker registration failed:', error);
+                }
+            }
         }
 
         // タブがアクティブになった時の処理
@@ -166,13 +257,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderStamps();
             updateProgress();
-            
-            // Service Worker登録
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.error('Service Worker registration failed:', err));
-            }
+            checkServiceWorkerUpdate();
         });
 
         // ページが表示された時（戻るボタンなど）
@@ -184,6 +269,16 @@
                 updateProgress();
             }
         });
+
+        // 定期的にService Workerの更新をチェック（10秒ごと）
+        setInterval(async () => {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    await registration.update();
+                }
+            }
+        }, 10000);
     </script>
 </body>
 </html>

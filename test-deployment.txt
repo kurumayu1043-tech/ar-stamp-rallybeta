@@ -1,0 +1,21 @@
+Deployment Test File
+====================
+Last Updated: 2024-08-28 16:30:00 UTC
+Version: 6.0.1
+
+This is a simple text file to verify GitHub Pages deployment.
+If you can see this file with the correct timestamp above, 
+the deployment is working correctly.
+
+Changes in this version:
+- Added aggressive cache busting
+- Service Worker v6 with timestamp-based cache names
+- .nojekyll file to prevent Jekyll processing
+- GitHub Actions workflow for deployment
+- Force update functionality
+- Deployment verification tools
+
+Test URLs:
+- https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/test-deployment.txt
+- https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/version.html
+- https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/check-deployment.html
