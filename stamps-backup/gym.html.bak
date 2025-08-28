@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>文実模擬店２ - ARスタンプラリー</title>
+    <title>入場口 - ARスタンプラリー</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="../css/style.css?v=20240828-3">
+    <link rel="stylesheet" href="../css/style.css?v=4">
     <style>
         .auto-stamp-page {
             min-height: 100vh;
@@ -97,7 +97,7 @@
         .location-badge {
             display: inline-block;
             padding: 8px 20px;
-            background: #d2b4de;
+            background: #dda0dd;
             color: #333;
             border-radius: 20px;
             font-weight: bold;
@@ -178,7 +178,7 @@
 </head>
 <body>
     <div class="auto-stamp-page">
-        <div class="location-badge">文実模擬店２</div>
+        <div class="location-badge">体育館</div>
         <h1 class="stamp-get-title">スタンプゲット！</h1>
         
         <div class="stamp-image-container">
@@ -189,7 +189,8 @@
         <div class="success-check">✅</div>
         
         <p class="stamp-get-description">
-            楽しいゲームコーナーです。
+            ようこそ文化祭へ！<br>
+            素敵な一日をお過ごしください。
         </p>
         
         <div class="success-message" style="margin-top: 20px;">
@@ -212,24 +213,15 @@
         </div>
     </div>
 
-    <script src="../js/stamp-rally.js?v=20240828-3"></script>
+    <script src="../js/stamp-rally.js"></script>
     <script>
-        const STAMP_ID = 'bunmi2';
-        const STAMP_NAME = '文実模擬店２';
+        const STAMP_ID = 'gym';
+        const STAMP_NAME = '体育館';
         const REDIRECT_DELAY = 3000; // 3秒後にリダイレクト
         
         // ページ読み込み時の処理
         document.addEventListener('DOMContentLoaded', () => {
             console.log(`===== スタンプ自動取得: ${STAMP_NAME} =====`);
-            
-            // stampRallyが読み込まれるまで待機
-            if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
-                console.log('Waiting for stampRally to load...');
-                setTimeout(() => {
-                    location.reload();
-                }, 100);
-                return;
-            }
             
             // スタンプを収集
             const isNew = stampRally.collectStamp(STAMP_ID);
@@ -252,10 +244,6 @@
             const total = Object.keys(STAMP_DATA).length;
             console.log(`📊 現在の収集状況: ${collected} / ${total}`);
             
-            // LocalStorageの状態を確認
-            console.log('LocalStorage content:', localStorage.getItem('arStamps2024'));
-            console.log('stampRally.stamps:', stampRally.stamps);
-            
             // 全スタンプ収集チェック
             if (stampRally.isAllCollected()) {
                 console.log('🎉 全スタンプコンプリート！');
@@ -277,6 +265,14 @@
                 console.log('🔄 ホームページにリダイレクト');
                 window.location.href = '../index.html';
             }, REDIRECT_DELAY);
+            
+            // デバッグモードの場合、詳細情報を表示
+            if (getUrlParam('debug') === '1') {
+                debugLog(`スタンプID: ${STAMP_ID}`);
+                debugLog(`新規取得: ${isNew}`);
+                debugLog(`収集済み: ${collected}/${total}`);
+                debugLog(`localStorage: ${JSON.stringify(stampRally.stamps)}`);
+            }
         });
         
         // ページ離脱時のログ
@@ -291,9 +287,7 @@
             } else {
                 console.log('タブがアクティブになりました');
                 // 最新の状態を再読み込み
-                if (typeof stampRally !== 'undefined') {
-                    stampRally.loadStamps();
-                }
+                stampRally.loadStamps();
             }
         });
     </script>

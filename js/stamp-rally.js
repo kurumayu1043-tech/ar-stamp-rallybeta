@@ -1,5 +1,6 @@
 // ========================================
 // ARスタンプラリー 共通JavaScript
+// Version: 2.0.0
 // ========================================
 
 // スタンプデータの定義（2×4のグリッドに最適化された順序）
@@ -69,45 +70,70 @@ class StampRally {
         this.storageKey = 'arStamps2024';
         this.tabStorageKey = 'arStamps2024_tabs';
         this.currentStampKey = 'currentStamp';
+        this.debugMode = true; // デバッグモードを有効化
         this.init();
+    }
+
+    // デバッグログ
+    debugLog(message, data = null) {
+        if (this.debugMode) {
+            const timestamp = new Date().toISOString();
+            console.log(`[StampRally ${timestamp}] ${message}`);
+            if (data !== null) {
+                console.log(data);
+            }
+        }
     }
 
     // 初期化
     init() {
+        this.debugLog('初期化開始');
         this.loadStamps();
         this.setupTabSync();
         this.setupVisibilityChange();
+        this.debugLog('初期化完了', { stamps: this.stamps });
     }
 
     // スタンプデータをlocalStorageから読み込み
     loadStamps() {
         try {
             const saved = localStorage.getItem(this.storageKey);
+            this.debugLog('LocalStorageから読み込み', { key: this.storageKey, value: saved });
+            
             if (saved) {
                 this.stamps = JSON.parse(saved);
+                this.debugLog('スタンプデータ読み込み成功', this.stamps);
             } else {
                 this.stamps = {};
+                this.debugLog('スタンプデータなし、空オブジェクトで初期化');
             }
         } catch (e) {
             console.error('スタンプデータの読み込みエラー:', e);
             this.stamps = {};
+            this.debugLog('読み込みエラー、空オブジェクトで初期化', e);
         }
     }
 
     // スタンプデータを保存
     saveStamps() {
         try {
-            localStorage.setItem(this.storageKey, JSON.stringify(this.stamps));
+            const dataToSave = JSON.stringify(this.stamps);
+            localStorage.setItem(this.storageKey, dataToSave);
+            this.debugLog('スタンプデータ保存', { key: this.storageKey, value: dataToSave });
             this.notifyTabsUpdate();
         } catch (e) {
             console.error('スタンプデータの保存エラー:', e);
+            this.debugLog('保存エラー', e);
         }
     }
 
     // スタンプを収集
     collectStamp(stampId) {
+        this.debugLog(`スタンプ収集開始: ${stampId}`);
+        
         if (!STAMP_DATA[stampId]) {
             console.error('無効なスタンプID:', stampId);
+            this.debugLog(`無効なスタンプID: ${stampId}`);
             return false;
         }
 
@@ -121,30 +147,44 @@ class StampRally {
 
         this.saveStamps();
         
-        console.log(`スタンプ収集: ${STAMP_DATA[stampId].name} (新規: ${isNew})`);
+        this.debugLog(`スタンプ収集完了: ${STAMP_DATA[stampId].name}`, { 
+            stampId, 
+            isNew, 
+            currentStamps: this.stamps,
+            localStorage: localStorage.getItem(this.storageKey)
+        });
         
         return isNew;
     }
 
     // スタンプが収集済みかチェック
     isCollected(stampId) {
-        return this.stamps[stampId] && this.stamps[stampId].collected;
+        const collected = this.stamps[stampId] && this.stamps[stampId].collected === true;
+        this.debugLog(`スタンプチェック: ${stampId} = ${collected}`);
+        return collected;
     }
 
     // 収集済みスタンプ数を取得
     getCollectedCount() {
-        return Object.keys(this.stamps).filter(key => this.stamps[key].collected).length;
+        const count = Object.keys(this.stamps).filter(key => this.stamps[key] && this.stamps[key].collected === true).length;
+        this.debugLog(`収集済みスタンプ数: ${count}`);
+        return count;
     }
 
     // 全スタンプ収集済みかチェック
     isAllCollected() {
-        return this.getCollectedCount() === Object.keys(STAMP_DATA).length;
+        const allCollected = this.getCollectedCount() === Object.keys(STAMP_DATA).length;
+        this.debugLog(`全スタンプ収集済み: ${allCollected}`);
+        return allCollected;
     }
 
     // スタンプをリセット
     resetStamps() {
+        this.debugLog('スタンプリセット開始');
         this.stamps = {};
         this.saveStamps();
+        localStorage.removeItem(this.storageKey);
+        this.debugLog('スタンプリセット完了');
     }
 
     // タブ間同期のセットアップ
@@ -152,7 +192,10 @@ class StampRally {
         // storageイベントをリッスン（他のタブでの変更を検知）
         window.addEventListener('storage', (e) => {
             if (e.key === this.storageKey) {
-                console.log('他のタブでスタンプが更新されました');
+                this.debugLog('他のタブでスタンプが更新されました', {
+                    oldValue: e.oldValue,
+                    newValue: e.newValue
+                });
                 this.loadStamps();
                 if (typeof this.onStampsUpdated === 'function') {
                     this.onStampsUpdated();
@@ -163,19 +206,23 @@ class StampRally {
                 this.handleTabMessage(message);
             }
         });
+        this.debugLog('タブ間同期セットアップ完了');
     }
 
     // タブがアクティブになった時の処理
     setupVisibilityChange() {
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                console.log('タブがアクティブになりました');
+                this.debugLog('タブがアクティブになりました');
                 this.loadStamps();
                 if (typeof this.onTabActivated === 'function') {
                     this.onTabActivated();
                 }
+            } else {
+                this.debugLog('タブが非アクティブになりました');
             }
         });
+        this.debugLog('visibilitychangeイベントセットアップ完了');
     }
 
     // 他のタブに更新を通知
@@ -188,19 +235,21 @@ class StampRally {
         
         try {
             localStorage.setItem(this.tabStorageKey, JSON.stringify(message));
+            this.debugLog('タブ更新通知送信', message);
             // すぐに削除（イベントを発火させるため）
             setTimeout(() => {
                 localStorage.removeItem(this.tabStorageKey);
             }, 100);
         } catch (e) {
             console.error('タブ通知エラー:', e);
+            this.debugLog('タブ通知エラー', e);
         }
     }
 
     // タブメッセージを処理
     handleTabMessage(message) {
         if (message.type === 'stamps_updated' && message.tabId !== this.getTabId()) {
-            console.log('他のタブからスタンプ更新通知を受信');
+            this.debugLog('他のタブからスタンプ更新通知を受信', message);
             this.loadStamps();
             if (typeof this.onStampsUpdated === 'function') {
                 this.onStampsUpdated();
@@ -212,6 +261,7 @@ class StampRally {
     getTabId() {
         if (!this.tabId) {
             this.tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            this.debugLog('タブID生成', this.tabId);
         }
         return this.tabId;
     }
@@ -219,16 +269,33 @@ class StampRally {
     // 現在のスタンプを保存（タブ間共有用）
     setCurrentStamp(stampId) {
         sessionStorage.setItem(this.currentStampKey, stampId);
+        this.debugLog('現在のスタンプ設定', stampId);
     }
 
     // 現在のスタンプを取得
     getCurrentStamp() {
-        return sessionStorage.getItem(this.currentStampKey);
+        const current = sessionStorage.getItem(this.currentStampKey);
+        this.debugLog('現在のスタンプ取得', current);
+        return current;
     }
 
     // 現在のスタンプをクリア
     clearCurrentStamp() {
         sessionStorage.removeItem(this.currentStampKey);
+        this.debugLog('現在のスタンプクリア');
+    }
+
+    // デバッグ情報を取得
+    getDebugInfo() {
+        return {
+            stamps: this.stamps,
+            localStorage: localStorage.getItem(this.storageKey),
+            sessionStorage: sessionStorage.getItem(this.currentStampKey),
+            collectedCount: this.getCollectedCount(),
+            totalStamps: Object.keys(STAMP_DATA).length,
+            isAllCollected: this.isAllCollected(),
+            tabId: this.getTabId()
+        };
     }
 }
 
@@ -293,6 +360,13 @@ function debugLog(message) {
 
 // スタンプラリーインスタンスをグローバルに作成
 const stampRally = new StampRally();
+
+// デバッグ用グローバル関数
+window.stampRallyDebug = function() {
+    return stampRally.getDebugInfo();
+};
+
+console.log('StampRally loaded. Use stampRallyDebug() to view debug info.');
 
 // エクスポート（ES6モジュール対応）
 if (typeof module !== 'undefined' && module.exports) {

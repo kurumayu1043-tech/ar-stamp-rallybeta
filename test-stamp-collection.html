@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スタンプ収集テストページ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #ff9800;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .stamp-test-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stamp-test-item {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .stamp-test-item.collected {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .stamp-test-item:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 スタンプ収集診断ツール</h1>
+    
+    <div class="card">
+        <h2>📊 現在の状態</h2>
+        <div id="current-status">
+            <p>読み込み中...</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🛠️ テストアクション</h2>
+        <button onclick="checkLocalStorage()">💾 LocalStorage確認</button>
+        <button onclick="testCollectStamp()">✅ テストスタンプ収集</button>
+        <button onclick="simulateTabSync()">🔄 タブ同期テスト</button>
+        <button onclick="clearAllData()" class="danger">🗑️ 全データクリア</button>
+        <button onclick="reloadPage()">🔄 ページ再読み込み</button>
+    </div>
+    
+    <div class="card">
+        <h2>🎯 個別スタンプテスト</h2>
+        <div class="stamp-test-grid" id="stamp-test-grid">
+            <!-- 動的に生成 -->
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📝 ログ出力</h2>
+        <pre id="log-output"></pre>
+    </div>
+    
+    <script src="js/stamp-rally.js"></script>
+    <script>
+        let logBuffer = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            const logMessage = `[${timestamp}] ${message}`;
+            logBuffer.push(logMessage);
+            console.log(logMessage);
+            
+            const logOutput = document.getElementById('log-output');
+            if (logOutput) {
+                logOutput.textContent = logBuffer.slice(-20).join('\n');
+            }
+        }
+        
+        function updateStatus() {
+            const statusDiv = document.getElementById('current-status');
+            
+            // stampRallyの状態を確認
+            if (typeof stampRally === 'undefined') {
+                statusDiv.innerHTML = '<div class="status error">❌ stampRally オブジェクトが定義されていません</div>';
+                return;
+            }
+            
+            // LocalStorageから直接読み込み
+            const localStorageData = localStorage.getItem('arStamps2024');
+            const parsedData = localStorageData ? JSON.parse(localStorageData) : {};
+            
+            // stampRallyの状態を再読み込み
+            stampRally.loadStamps();
+            
+            let html = '';
+            html += '<div class="status info">✅ stampRally オブジェクト検出</div>';
+            html += `<div class="status info">収集済みスタンプ数: ${stampRally.getCollectedCount()} / ${Object.keys(STAMP_DATA).length}</div>`;
+            
+            // LocalStorageの内容
+            html += '<h3>LocalStorage内容:</h3>';
+            html += '<pre>' + JSON.stringify(parsedData, null, 2) + '</pre>';
+            
+            // stampRallyの内容
+            html += '<h3>stampRally.stamps内容:</h3>';
+            html += '<pre>' + JSON.stringify(stampRally.stamps, null, 2) + '</pre>';
+            
+            // 各スタンプの状態
+            html += '<h3>各スタンプの状態:</h3>';
+            Object.keys(STAMP_DATA).forEach(stampId => {
+                const isCollected = stampRally.isCollected(stampId);
+                const status = isCollected ? '✅ 収集済み' : '❌ 未収集';
+                html += `<div>${STAMP_DATA[stampId].name}: ${status}</div>`;
+            });
+            
+            statusDiv.innerHTML = html;
+        }
+        
+        function checkLocalStorage() {
+            log('LocalStorage確認開始');
+            
+            const data = localStorage.getItem('arStamps2024');
+            if (data) {
+                log('LocalStorageデータ発見: ' + data);
+                try {
+                    const parsed = JSON.parse(data);
+                    log('パース成功。スタンプ数: ' + Object.keys(parsed).length);
+                } catch (e) {
+                    log('パースエラー: ' + e.message, 'error');
+                }
+            } else {
+                log('LocalStorageにデータがありません', 'warning');
+            }
+            
+            updateStatus();
+        }
+        
+        function testCollectStamp() {
+            log('テストスタンプ収集開始');
+            
+            // entranceスタンプを収集
+            const isNew = stampRally.collectStamp('entrance');
+            log(`entrance収集結果: ${isNew ? '新規取得' : '既に取得済み'}`);
+            
+            // LocalStorageを確認
+            const data = localStorage.getItem('arStamps2024');
+            log('収集後のLocalStorage: ' + data);
+            
+            updateStatus();
+            renderStampGrid();
+        }
+        
+        function simulateTabSync() {
+            log('タブ同期シミュレーション開始');
+            
+            // storage eventを手動で発火
+            const event = new StorageEvent('storage', {
+                key: 'arStamps2024',
+                newValue: localStorage.getItem('arStamps2024'),
+                oldValue: null,
+                storageArea: localStorage,
+                url: window.location.href
+            });
+            
+            window.dispatchEvent(event);
+            log('storage eventを発火しました');
+            
+            // stampRallyの再読み込み
+            stampRally.loadStamps();
+            log('stampRallyを再読み込みしました');
+            
+            updateStatus();
+            renderStampGrid();
+        }
+        
+        function clearAllData() {
+            if (confirm('本当に全データをクリアしますか？')) {
+                log('全データクリア実行');
+                localStorage.removeItem('arStamps2024');
+                localStorage.removeItem('arStamps2024_tabs');
+                sessionStorage.clear();
+                stampRally.stamps = {};
+                log('クリア完了');
+                updateStatus();
+                renderStampGrid();
+            }
+        }
+        
+        function reloadPage() {
+            window.location.reload();
+        }
+        
+        function collectIndividualStamp(stampId) {
+            log(`個別スタンプ収集: ${stampId}`);
+            const isNew = stampRally.collectStamp(stampId);
+            log(`${stampId}収集結果: ${isNew ? '新規取得' : '既に取得済み'}`);
+            updateStatus();
+            renderStampGrid();
+        }
+        
+        function renderStampGrid() {
+            const grid = document.getElementById('stamp-test-grid');
+            grid.innerHTML = '';
+            
+            Object.keys(STAMP_DATA).forEach(stampId => {
+                const stamp = STAMP_DATA[stampId];
+                const isCollected = stampRally.isCollected(stampId);
+                
+                const item = document.createElement('div');
+                item.className = `stamp-test-item ${isCollected ? 'collected' : ''}`;
+                item.onclick = () => collectIndividualStamp(stampId);
+                item.innerHTML = `
+                    <div>${stamp.icon}</div>
+                    <div><strong>${stamp.name}</strong></div>
+                    <div>${isCollected ? '✅ 収集済み' : '❌ 未収集'}</div>
+                `;
+                
+                grid.appendChild(item);
+            });
+        }
+        
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('ページ読み込み完了');
+            
+            if (typeof stampRally === 'undefined') {
+                log('stampRallyが定義されていません！', 'error');
+                return;
+            }
+            
+            log('stampRally初期化成功');
+            updateStatus();
+            renderStampGrid();
+            
+            // storageイベントのリスナー
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'arStamps2024') {
+                    log('storage event検出: arStamps2024が変更されました');
+                    updateStatus();
+                    renderStampGrid();
+                }
+            });
+            
+            // visibilitychangeイベントのリスナー
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    log('タブがアクティブになりました');
+                    stampRally.loadStamps();
+                    updateStatus();
+                    renderStampGrid();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

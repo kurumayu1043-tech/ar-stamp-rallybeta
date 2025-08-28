@@ -1,9 +1,67 @@
-<!DOCTYPE html>
+// スタンプページ生成スクリプト
+const fs = require('fs');
+const path = require('path');
+
+// スタンプデータ
+const STAMP_DATA = {
+    entrance: { 
+        name: '入場口', 
+        icon: '🏛️',
+        description: 'ようこそ文化祭へ！素敵な一日をお過ごしください。',
+        color: '#ffc0cb'
+    },
+    ticket: { 
+        name: '金券売り場', 
+        icon: '🎫',
+        description: '金券はこちらでお買い求めください。',
+        color: '#98c1d9'
+    },
+    stage: { 
+        name: 'ステージ前', 
+        icon: '🎭',
+        description: 'パフォーマンスをお楽しみください！',
+        color: '#f7e07a'
+    },
+    bunmi1: { 
+        name: '文実模擬店１', 
+        icon: '🍜',
+        description: '美味しい食べ物がいっぱい！',
+        color: '#a9e2a9'
+    },
+    bunmi2: { 
+        name: '文実模擬店２', 
+        icon: '🎮',
+        description: '楽しいゲームコーナーです。',
+        color: '#d2b4de'
+    },
+    yamato: { 
+        name: '庭大和', 
+        icon: '🌸',
+        description: '和の雰囲気を感じる憩いの空間。',
+        color: '#ffb6c1'
+    },
+    rhythm: { 
+        name: 'リズム館', 
+        icon: '🎵',
+        description: '音楽の世界へようこそ！',
+        color: '#87ceeb'
+    },
+    gym: { 
+        name: '体育館', 
+        icon: '🏐',
+        description: 'スポーツイベント開催中！',
+        color: '#dda0dd'
+    }
+};
+
+// HTMLテンプレート
+function createStampHTML(stampId, stampData) {
+    return `<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>文実模擬店２ - ARスタンプラリー</title>
+    <title>${stampData.name} - ARスタンプラリー</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -97,7 +155,7 @@
         .location-badge {
             display: inline-block;
             padding: 8px 20px;
-            background: #d2b4de;
+            background: ${stampData.color};
             color: #333;
             border-radius: 20px;
             font-weight: bold;
@@ -178,7 +236,7 @@
 </head>
 <body>
     <div class="auto-stamp-page">
-        <div class="location-badge">文実模擬店２</div>
+        <div class="location-badge">${stampData.name}</div>
         <h1 class="stamp-get-title">スタンプゲット！</h1>
         
         <div class="stamp-image-container">
@@ -189,7 +247,7 @@
         <div class="success-check">✅</div>
         
         <p class="stamp-get-description">
-            楽しいゲームコーナーです。
+            ${stampData.description}
         </p>
         
         <div class="success-message" style="margin-top: 20px;">
@@ -214,13 +272,13 @@
 
     <script src="../js/stamp-rally.js?v=20240828-3"></script>
     <script>
-        const STAMP_ID = 'bunmi2';
-        const STAMP_NAME = '文実模擬店２';
+        const STAMP_ID = '${stampId}';
+        const STAMP_NAME = '${stampData.name}';
         const REDIRECT_DELAY = 3000; // 3秒後にリダイレクト
         
         // ページ読み込み時の処理
         document.addEventListener('DOMContentLoaded', () => {
-            console.log(`===== スタンプ自動取得: ${STAMP_NAME} =====`);
+            console.log(\`===== スタンプ自動取得: \${STAMP_NAME} =====\`);
             
             // stampRallyが読み込まれるまで待機
             if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
@@ -235,7 +293,7 @@
             const isNew = stampRally.collectStamp(STAMP_ID);
             
             if (isNew) {
-                console.log(`✅ 新しいスタンプを獲得: ${STAMP_NAME}`);
+                console.log(\`✅ 新しいスタンプを獲得: \${STAMP_NAME}\`);
                 
                 // サウンド効果（対応ブラウザのみ）
                 try {
@@ -243,14 +301,14 @@
                     audio.play().catch(() => {}); // エラーは無視
                 } catch (e) {}
             } else {
-                console.log(`ℹ️ 既に獲得済みのスタンプ: ${STAMP_NAME}`);
+                console.log(\`ℹ️ 既に獲得済みのスタンプ: \${STAMP_NAME}\`);
                 document.querySelector('.success-message strong').textContent = 'このスタンプは既に獲得済みです';
             }
             
             // 収集状況をログ出力
             const collected = stampRally.getCollectedCount();
             const total = Object.keys(STAMP_DATA).length;
-            console.log(`📊 現在の収集状況: ${collected} / ${total}`);
+            console.log(\`📊 現在の収集状況: \${collected} / \${total}\`);
             
             // LocalStorageの状態を確認
             console.log('LocalStorage content:', localStorage.getItem('arStamps2024'));
@@ -267,7 +325,7 @@
             const countdownInterval = setInterval(() => {
                 countdown--;
                 if (countdown > 0) {
-                    document.getElementById('redirect-text').textContent = `${countdown}秒後にホームに戻ります...`;
+                    document.getElementById('redirect-text').textContent = \`\${countdown}秒後にホームに戻ります...\`;
                 }
             }, 1000);
             
@@ -281,7 +339,7 @@
         
         // ページ離脱時のログ
         window.addEventListener('beforeunload', () => {
-            console.log(`ページを離れます: ${STAMP_NAME}`);
+            console.log(\`ページを離れます: \${STAMP_NAME}\`);
         });
         
         // タブがバックグラウンドになった時
@@ -298,4 +356,35 @@
         });
     </script>
 </body>
-</html>
+</html>`;
+}
+
+// スタンプページを生成
+const stampsDir = path.join(__dirname, 'stamps');
+
+// 既存のファイルをバックアップ
+const backupDir = path.join(__dirname, 'stamps-backup');
+if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir);
+}
+
+// 各スタンプページを生成
+Object.keys(STAMP_DATA).forEach(stampId => {
+    const stampData = STAMP_DATA[stampId];
+    const html = createStampHTML(stampId, stampData);
+    const filePath = path.join(stampsDir, `${stampId}.html`);
+    
+    // 既存ファイルをバックアップ
+    if (fs.existsSync(filePath)) {
+        const backupPath = path.join(backupDir, `${stampId}.html.bak`);
+        fs.copyFileSync(filePath, backupPath);
+        console.log(`Backed up: ${stampId}.html`);
+    }
+    
+    // 新しいファイルを書き込み
+    fs.writeFileSync(filePath, html);
+    console.log(`Created: ${stampId}.html`);
+});
+
+console.log('\n✅ すべてのスタンプページを生成しました！');
+console.log('バックアップは stamps-backup/ フォルダに保存されています。');

@@ -20,8 +20,8 @@
     <!-- PWA対応のためのマニフェスト -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- スタイルシート - タイムスタンプ付き -->
-    <link rel="stylesheet" href="css/style.css?v=<?php echo time(); ?>">
+    <!-- スタイルシート -->
+    <link rel="stylesheet" href="css/style.css?v=20240828-2">
 </head>
 <body>
     <div class="container">
@@ -49,6 +49,9 @@
             <h2>🏆 スタンプコレクション</h2>
             <div class="stamp-grid" id="stamp-grid">
                 <!-- JavaScriptで動的に生成 -->
+                <div style="text-align: center; padding: 20px; color: #999;">
+                    読み込み中...
+                </div>
             </div>
         </div>
 
@@ -88,28 +91,42 @@
         </div>
     </div>
 
-    <!-- 共通JavaScript - タイムスタンプ付き -->
-    <script>
-        // 動的にタイムスタンプを追加
-        const scriptTag = document.createElement('script');
-        scriptTag.src = 'js/stamp-rally.js?v=' + Date.now();
-        document.head.appendChild(scriptTag);
-    </script>
+    <!-- 共通JavaScript -->
+    <script src="js/stamp-rally.js?v=20240828-2"></script>
     
     <!-- ページ固有のJavaScript -->
     <script>
         // バージョン情報を表示
-        const VERSION = '6.0.0-' + new Date().toISOString().slice(0, 10);
-        document.getElementById('version-info').textContent = VERSION;
-
+        const VERSION = '6.0.2-' + new Date().toISOString().slice(0, 10);
+        
         // スタンプグリッドを描画
         function renderStamps() {
+            console.log('renderStamps called');
+            
+            // stampRallyとSTAMP_DATAが利用可能か確認
+            if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
+                console.error('stampRally or STAMP_DATA is not defined');
+                setTimeout(renderStamps, 100); // 100ms後に再試行
+                return;
+            }
+            
             const grid = document.getElementById('stamp-grid');
+            if (!grid) {
+                console.error('stamp-grid element not found');
+                return;
+            }
+            
             grid.innerHTML = '';
+            
+            // stampRallyの状態を再読み込み
+            stampRally.loadStamps();
+            console.log('Current stamps:', stampRally.stamps);
 
             Object.keys(STAMP_DATA).forEach(stampId => {
                 const stamp = STAMP_DATA[stampId];
                 const isCollected = stampRally.isCollected(stampId);
+                
+                console.log(`Stamp ${stampId}: collected = ${isCollected}`);
                 
                 const item = document.createElement('div');
                 item.className = `stamp-item ${isCollected ? 'collected' : ''}`;
@@ -135,16 +152,39 @@
 
         // 進捗を更新
         function updateProgress() {
+            console.log('updateProgress called');
+            
+            if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
+                console.error('stampRally or STAMP_DATA is not defined');
+                setTimeout(updateProgress, 100);
+                return;
+            }
+            
+            // stampRallyの状態を再読み込み
+            stampRally.loadStamps();
+            
             const count = stampRally.getCollectedCount();
             const total = Object.keys(STAMP_DATA).length;
             const percentage = (count / total) * 100;
             
-            document.getElementById('progress-fill').style.width = `${percentage}%`;
-            document.getElementById('progress-text').textContent = `${count} / ${total}`;
+            console.log(`Progress: ${count} / ${total} (${percentage}%)`);
+            
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            if (progressFill) {
+                progressFill.style.width = `${percentage}%`;
+            }
+            if (progressText) {
+                progressText.textContent = `${count} / ${total}`;
+            }
             
             // 全スタンプ収集時
             if (stampRally.isAllCollected()) {
-                document.getElementById('complete-message').style.display = 'block';
+                const completeMessage = document.getElementById('complete-message');
+                if (completeMessage) {
+                    completeMessage.style.display = 'block';
+                }
             }
         }
 
@@ -228,8 +268,10 @@
                         console.log('Message from Service Worker:', event.data);
                         if (event.data.type === 'SW_ACTIVATED') {
                             console.log('New Service Worker activated, version:', event.data.version);
-                            document.getElementById('version-info').textContent = 
-                                VERSION + ' (SW:' + event.data.version + ')';
+                            const versionInfo = document.getElementById('version-info');
+                            if (versionInfo) {
+                                versionInfo.textContent = VERSION + ' (SW:' + event.data.version + ')';
+                            }
                         }
                     });
                     
@@ -239,31 +281,75 @@
             }
         }
 
-        // タブがアクティブになった時の処理
-        stampRally.onTabActivated = () => {
-            console.log('タブがアクティブになったので表示を更新');
-            renderStamps();
-            updateProgress();
-        };
+        // stampRallyの準備ができたら初期化
+        function initializeApp() {
+            console.log('Initializing app...');
+            
+            if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
+                console.log('Waiting for stampRally to be ready...');
+                setTimeout(initializeApp, 100);
+                return;
+            }
+            
+            console.log('stampRally is ready, setting up event handlers');
+            
+            // バージョン情報を表示
+            const versionInfo = document.getElementById('version-info');
+            if (versionInfo) {
+                versionInfo.textContent = VERSION;
+            }
+            
+            // タブがアクティブになった時の処理
+            stampRally.onTabActivated = () => {
+                console.log('タブがアクティブになったので表示を更新');
+                stampRally.loadStamps(); // 最新データを読み込み
+                renderStamps();
+                updateProgress();
+            };
 
-        // 他のタブでスタンプが更新された時の処理
-        stampRally.onStampsUpdated = () => {
-            console.log('他のタブでスタンプが更新されたので表示を更新');
+            // 他のタブでスタンプが更新された時の処理
+            stampRally.onStampsUpdated = () => {
+                console.log('他のタブでスタンプが更新されたので表示を更新');
+                stampRally.loadStamps(); // 最新データを読み込み
+                renderStamps();
+                updateProgress();
+            };
+            
+            // 初期表示
             renderStamps();
             updateProgress();
-        };
+            
+            // Service Worker登録
+            checkServiceWorkerUpdate();
+            
+            // localStorageの内容をデバッグ出力
+            console.log('localStorage content:', localStorage.getItem('arStamps2024'));
+            console.log('stampRally.stamps:', stampRally.stamps);
+        }
 
         // ページ読み込み時の初期化
         document.addEventListener('DOMContentLoaded', () => {
-            renderStamps();
-            updateProgress();
-            checkServiceWorkerUpdate();
+            console.log('DOMContentLoaded');
+            initializeApp();
         });
 
         // ページが表示された時（戻るボタンなど）
         window.addEventListener('pageshow', (event) => {
+            console.log('pageshow event, persisted:', event.persisted);
             if (event.persisted) {
                 // キャッシュから復元された場合
+                if (typeof stampRally !== 'undefined') {
+                    stampRally.loadStamps();
+                    renderStamps();
+                    updateProgress();
+                }
+            }
+        });
+
+        // フォーカスイベントでも更新
+        window.addEventListener('focus', () => {
+            console.log('Window focused, updating display');
+            if (typeof stampRally !== 'undefined') {
                 stampRally.loadStamps();
                 renderStamps();
                 updateProgress();
@@ -279,6 +365,16 @@
                 }
             }
         }, 10000);
+        
+        // 定期的にスタンプの状態を更新（5秒ごと）
+        setInterval(() => {
+            if (typeof stampRally !== 'undefined') {
+                console.log('Periodic refresh');
+                stampRally.loadStamps();
+                renderStamps();
+                updateProgress();
+            }
+        }, 5000);
     </script>
 </body>
 </html>
