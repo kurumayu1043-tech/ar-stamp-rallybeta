@@ -1,86 +1,31 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>リダイレクト中...</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-        }
-        h1 {
-            margin-bottom: 20px;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            margin: 20px auto;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .error {
-            background: rgba(255, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-        a {
-            color: white;
-            text-decoration: underline;
-        }
-    </style>
+    <title>スタンプ収集中... - ARスタンプラリー</title>
+    <link rel="stylesheet" href="css/style.css?v=3.0.0">
 </head>
 <body>
-    <div class="container">
-        <h1>🔄 リダイレクト中...</h1>
-        <div class="spinner"></div>
-        <p id="status">新しいページに転送しています...</p>
-        <div id="error-message" style="display:none;" class="error">
-            <p>⚠️ スタンプIDが指定されていません。</p>
-            <p><a href="index.html">ホームページに戻る</a></p>
+    <div class="auto-stamp-page">
+        <div class="loading">
+            <div class="loading-spinner"></div>
         </div>
+        <h1 class="stamp-get-title">スタンプ収集中...</h1>
+        <p class="stamp-get-description">リダイレクトしています...</p>
     </div>
 
     <script>
-        // URLパラメータからスタンプIDを取得
+        // URLパラメータからスタンプIDを取得してリダイレクト
         const urlParams = new URLSearchParams(window.location.search);
         const stampId = urlParams.get('stamp');
         
-        console.log('collect.htmlリダイレクト: stampId =', stampId);
-        
         if (stampId) {
-            // 新しいスタンプページにリダイレクト
-            const newUrl = `stamps/${stampId}.html`;
-            document.getElementById('status').textContent = `${stampId}のページに転送しています...`;
-            
-            // 1秒後にリダイレクト
-            setTimeout(() => {
-                window.location.href = newUrl;
-            }, 1000);
+            // 対応するスタンプページにリダイレクト
+            window.location.href = `stamps/${stampId}.html`;
         } else {
-            // スタンプIDがない場合
-            document.getElementById('status').style.display = 'none';
-            document.querySelector('.spinner').style.display = 'none';
-            document.getElementById('error-message').style.display = 'block';
+            // スタンプIDがない場合はホームにリダイレクト
+            window.location.href = 'index.html';
         }
     </script>
 </body>

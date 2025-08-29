@@ -6,32 +6,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="ARスタンプ">
-    <!-- 強力なキャッシュ制御 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta http-equiv="Last-Modified" content="0">
-    <meta http-equiv="ETag" content="">
     <title>文化祭 ARスタンプラリー</title>
-    
-    <!-- iOS用アイコン -->
     <link rel="apple-touch-icon" href="nisyama1.png">
-    
-    <!-- PWA対応のためのマニフェスト -->
     <link rel="manifest" href="manifest.json">
-    
-    <!-- スタイルシート -->
-    <link rel="stylesheet" href="css/style.css?v=20240828-2">
+    <link rel="stylesheet" href="css/style.css?v=3.0.0">
 </head>
 <body>
     <div class="container">
-        <!-- ヘッダー -->
         <div class="header">
             <h1>🎪 文化祭 ARスタンプラリー</h1>
             <p>8つの場所でQRコードを見つけて<br>スマホのカメラで読み取ろう！</p>
         </div>
 
-        <!-- 進捗カード -->
         <div class="card">
             <h2>📊 収集状況</h2>
             <div class="progress-bar">
@@ -39,342 +28,41 @@
                     <span class="progress-text" id="progress-text">0 / 8</span>
                 </div>
             </div>
-            <p id="complete-message" style="display:none; text-align:center; margin-top:20px; font-size:1.2rem; color:#4CAF50;">
+            <p id="complete-message" class="hidden text-center mt-20" style="font-size:1.2rem; color:#4CAF50;">
                 🎉 全スタンプコンプリート！おめでとうございます！
             </p>
         </div>
 
-        <!-- スタンプグリッド -->
         <div class="card">
             <h2>🏆 スタンプコレクション</h2>
             <div class="stamp-grid" id="stamp-grid">
-                <!-- JavaScriptで動的に生成 -->
-                <div style="text-align: center; padding: 20px; color: #999;">
+                <div class="text-center" style="padding: 20px; color: #999;">
                     読み込み中...
                 </div>
             </div>
         </div>
 
-        <!-- アクションボタン -->
-        <div style="text-align: center; margin: 30px 0;">
-            <button class="button info" onclick="showInstructions()">
-                📖 使い方
-            </button>
-            <button class="button warning" onclick="forceUpdate()">
-                🔄 最新版に更新
-            </button>
-            <button class="button secondary" onclick="resetStamps()">
-                🗑️ リセット
-            </button>
-        </div>
-
-        <!-- デバッグ情報 -->
-        <div style="text-align: center; margin: 20px; font-size: 0.8rem; color: #999;">
-            Version: <span id="version-info">Loading...</span>
+        <div class="text-center" style="margin: 30px 0;">
+            <button class="button info" onclick="showInstructions()">📖 使い方</button>
+            <button class="button warning" onclick="forceUpdate()">🔄 最新版に更新</button>
+            <button class="button secondary" onclick="resetStamps()">🗑️ リセット</button>
         </div>
     </div>
 
-    <!-- 使い方モーダル -->
-    <div id="instructions-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000;">
+    <div id="instructions-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000;">
         <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:15px; max-width:500px; width:90%; color:#333;">
             <h2 style="margin-bottom:20px;">📖 使い方</h2>
             <ol style="text-align:left; line-height:1.8;">
                 <li>会場内の8箇所に設置されたQRコードを探そう</li>
                 <li>スマホのカメラアプリでQRコードを読み取ろう</li>
                 <li>表示されたリンクをタップしてスタンプをゲット</li>
-                <li>ARカメラで西山さんと一緒に写真を撮ろう</li>
                 <li>全部集めると特別なメッセージが！</li>
             </ol>
-            <button class="button primary" onclick="closeInstructions()" style="margin-top:20px;">
-                閉じる
-            </button>
+            <button class="button primary" onclick="closeInstructions()" style="margin-top:20px;">閉じる</button>
         </div>
     </div>
 
-    <!-- 共通JavaScript -->
-    <script src="js/stamp-rally.js?v=20240828-2"></script>
-    
-    <!-- ページ固有のJavaScript -->
-    <script>
-        // バージョン情報を表示
-        const VERSION = '6.0.2-' + new Date().toISOString().slice(0, 10);
-        
-        // スタンプグリッドを描画
-        function renderStamps() {
-            console.log('renderStamps called');
-            
-            // stampRallyとSTAMP_DATAが利用可能か確認
-            if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
-                console.error('stampRally or STAMP_DATA is not defined');
-                setTimeout(renderStamps, 100); // 100ms後に再試行
-                return;
-            }
-            
-            const grid = document.getElementById('stamp-grid');
-            if (!grid) {
-                console.error('stamp-grid element not found');
-                return;
-            }
-            
-            grid.innerHTML = '';
-            
-            // stampRallyの状態を再読み込み
-            stampRally.loadStamps();
-            console.log('Current stamps:', stampRally.stamps);
-
-            Object.keys(STAMP_DATA).forEach(stampId => {
-                const stamp = STAMP_DATA[stampId];
-                const isCollected = stampRally.isCollected(stampId);
-                
-                console.log(`Stamp ${stampId}: collected = ${isCollected}`);
-                
-                const item = document.createElement('div');
-                item.className = `stamp-item ${isCollected ? 'collected' : ''}`;
-                item.style.borderTop = `3px solid ${stamp.color}`;
-                
-                item.innerHTML = `
-                    <div class="stamp-icon">
-                        <img src="nisyama1.png" alt="スタンプ">
-                        ${!isCollected ? `<span class="stamp-emoji">${stamp.icon}</span>` : ''}
-                    </div>
-                    <div class="stamp-name">${stamp.name}</div>
-                    <div class="stamp-status">${isCollected ? '✅ 獲得済み' : '未獲得'}</div>
-                `;
-                
-                // 獲得済みスタンプをクリック（現在は何もしない）
-                if (isCollected) {
-                    item.style.cursor = 'default';
-                }
-                
-                grid.appendChild(item);
-            });
-        }
-
-        // 進捗を更新
-        function updateProgress() {
-            console.log('updateProgress called');
-            
-            if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
-                console.error('stampRally or STAMP_DATA is not defined');
-                setTimeout(updateProgress, 100);
-                return;
-            }
-            
-            // stampRallyの状態を再読み込み
-            stampRally.loadStamps();
-            
-            const count = stampRally.getCollectedCount();
-            const total = Object.keys(STAMP_DATA).length;
-            const percentage = (count / total) * 100;
-            
-            console.log(`Progress: ${count} / ${total} (${percentage}%)`);
-            
-            const progressFill = document.getElementById('progress-fill');
-            const progressText = document.getElementById('progress-text');
-            
-            if (progressFill) {
-                progressFill.style.width = `${percentage}%`;
-            }
-            if (progressText) {
-                progressText.textContent = `${count} / ${total}`;
-            }
-            
-            // 全スタンプ収集時
-            if (stampRally.isAllCollected()) {
-                const completeMessage = document.getElementById('complete-message');
-                if (completeMessage) {
-                    completeMessage.style.display = 'block';
-                }
-            }
-        }
-
-        // スタンプをリセット
-        function resetStamps() {
-            if (confirm('本当にすべてのスタンプをリセットしますか？')) {
-                stampRally.resetStamps();
-                renderStamps();
-                updateProgress();
-            }
-        }
-
-        // 強制更新
-        async function forceUpdate() {
-            console.log('強制更新を開始...');
-            
-            // Service Workerを更新
-            if ('serviceWorker' in navigator) {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (const registration of registrations) {
-                    await registration.unregister();
-                    console.log('Service Worker unregistered');
-                }
-                
-                // すべてのキャッシュをクリア
-                if ('caches' in window) {
-                    const cacheNames = await caches.keys();
-                    await Promise.all(
-                        cacheNames.map(cacheName => {
-                            console.log('Deleting cache:', cacheName);
-                            return caches.delete(cacheName);
-                        })
-                    );
-                }
-            }
-            
-            // ページをリロード（キャッシュを無視）
-            window.location.reload(true);
-        }
-
-        // 使い方を表示
-        function showInstructions() {
-            document.getElementById('instructions-modal').style.display = 'block';
-        }
-
-        function closeInstructions() {
-            document.getElementById('instructions-modal').style.display = 'none';
-        }
-
-        // Service Worker更新チェック
-        async function checkServiceWorkerUpdate() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    const registration = await navigator.serviceWorker.register('sw.js', {
-                        updateViaCache: 'none'  // キャッシュを無視して更新をチェック
-                    });
-                    
-                    console.log('Service Worker registered:', registration);
-                    
-                    // 更新チェック
-                    registration.addEventListener('updatefound', () => {
-                        console.log('Service Worker update found!');
-                        const newWorker = registration.installing;
-                        
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('New Service Worker installed, reloading page...');
-                                // 新しいService Workerがインストールされたらページをリロード
-                                setTimeout(() => {
-                                    window.location.reload(true);
-                                }, 1000);
-                            }
-                        });
-                    });
-                    
-                    // 手動で更新をチェック
-                    await registration.update();
-                    
-                    // Service Workerからのメッセージを受信
-                    navigator.serviceWorker.addEventListener('message', event => {
-                        console.log('Message from Service Worker:', event.data);
-                        if (event.data.type === 'SW_ACTIVATED') {
-                            console.log('New Service Worker activated, version:', event.data.version);
-                            const versionInfo = document.getElementById('version-info');
-                            if (versionInfo) {
-                                versionInfo.textContent = VERSION + ' (SW:' + event.data.version + ')';
-                            }
-                        }
-                    });
-                    
-                } catch (error) {
-                    console.error('Service Worker registration failed:', error);
-                }
-            }
-        }
-
-        // stampRallyの準備ができたら初期化
-        function initializeApp() {
-            console.log('Initializing app...');
-            
-            if (typeof stampRally === 'undefined' || typeof STAMP_DATA === 'undefined') {
-                console.log('Waiting for stampRally to be ready...');
-                setTimeout(initializeApp, 100);
-                return;
-            }
-            
-            console.log('stampRally is ready, setting up event handlers');
-            
-            // バージョン情報を表示
-            const versionInfo = document.getElementById('version-info');
-            if (versionInfo) {
-                versionInfo.textContent = VERSION;
-            }
-            
-            // タブがアクティブになった時の処理
-            stampRally.onTabActivated = () => {
-                console.log('タブがアクティブになったので表示を更新');
-                stampRally.loadStamps(); // 最新データを読み込み
-                renderStamps();
-                updateProgress();
-            };
-
-            // 他のタブでスタンプが更新された時の処理
-            stampRally.onStampsUpdated = () => {
-                console.log('他のタブでスタンプが更新されたので表示を更新');
-                stampRally.loadStamps(); // 最新データを読み込み
-                renderStamps();
-                updateProgress();
-            };
-            
-            // 初期表示
-            renderStamps();
-            updateProgress();
-            
-            // Service Worker登録
-            checkServiceWorkerUpdate();
-            
-            // localStorageの内容をデバッグ出力
-            console.log('localStorage content:', localStorage.getItem('arStamps2024'));
-            console.log('stampRally.stamps:', stampRally.stamps);
-        }
-
-        // ページ読み込み時の初期化
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOMContentLoaded');
-            initializeApp();
-        });
-
-        // ページが表示された時（戻るボタンなど）
-        window.addEventListener('pageshow', (event) => {
-            console.log('pageshow event, persisted:', event.persisted);
-            if (event.persisted) {
-                // キャッシュから復元された場合
-                if (typeof stampRally !== 'undefined') {
-                    stampRally.loadStamps();
-                    renderStamps();
-                    updateProgress();
-                }
-            }
-        });
-
-        // フォーカスイベントでも更新
-        window.addEventListener('focus', () => {
-            console.log('Window focused, updating display');
-            if (typeof stampRally !== 'undefined') {
-                stampRally.loadStamps();
-                renderStamps();
-                updateProgress();
-            }
-        });
-
-        // 定期的にService Workerの更新をチェック（10秒ごと）
-        setInterval(async () => {
-            if ('serviceWorker' in navigator) {
-                const registration = await navigator.serviceWorker.getRegistration();
-                if (registration) {
-                    await registration.update();
-                }
-            }
-        }, 10000);
-        
-        // 定期的にスタンプの状態を更新（5秒ごと）
-        setInterval(() => {
-            if (typeof stampRally !== 'undefined') {
-                console.log('Periodic refresh');
-                stampRally.loadStamps();
-                renderStamps();
-                updateProgress();
-            }
-        }, 5000);
-    </script>
+    <script src="js/stamp-rally.js?v=3.0.0"></script>
+    <script src="js/app.js?v=3.0.0"></script>
 </body>
 </html>

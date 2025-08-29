@@ -1,187 +1,76 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRコード生成ツール - 文化祭ARスタンプラリー</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <title>QRコード生成 - ARスタンプラリー</title>
+    <link rel="stylesheet" href="css/style.css?v=3.0.0">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=2">
-    <style>
-        body {
-            background: white;
-            color: #333;
-        }
-        .qr-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .qr-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-top: 30px;
-        }
-        .qr-item {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-top: 5px solid;
-        }
-        .qr-item h2 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.5rem;
-        }
-        .qr-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-        .qr-description {
-            color: #666;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-        }
-        .qr-code {
-            display: inline-block;
-            padding: 20px;
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            margin: 15px 0;
-        }
-        .qr-url {
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            word-break: break-all;
-            margin-top: 10px;
-            color: #666;
-            font-family: monospace;
-        }
-        .download-btn {
-            background: #ff5e62;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-size: 1rem;
-            transition: background 0.3s;
-        }
-        .download-btn:hover {
-            background: #ff4a4e;
-        }
-        .instructions {
-            background: #ffffcc;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border-left: 5px solid #ffcc00;
-        }
-        @media print {
-            body {
-                background: white;
-            }
-            .instructions, .download-btn {
-                display: none;
-            }
-            .qr-item {
-                page-break-inside: avoid;
-                box-shadow: none;
-                border: 1px solid #ddd;
-            }
-        }
-    </style>
 </head>
 <body>
-    <div class="qr-container">
-        <h1 style="text-align: center; color: #667eea;">🎪 文化祭ARスタンプラリー QRコード一覧</h1>
-        
-        <div class="instructions">
-            <h2>📝 使い方</h2>
-            <ol>
-                <li>下記のQRコードを印刷して各場所に設置してください</li>
-                <li>参加者はスマホのカメラアプリでQRコードを読み取ります</li>
-                <li>表示されたリンクをタップするとスタンプが獲得できます</li>
-                <li>各ページは独立しているので、新しいタブで開いても正しく動作します</li>
-            </ol>
-            <p style="margin-top: 15px;"><strong>⚠️ 設置時の注意事項：</strong></p>
-            <ul style="margin-left: 20px;">
-                <li>A4サイズで印刷すると見やすいサイズになります</li>
-                <li>防水対策としてラミネート加工を推奨します</li>
-                <li>目立つ場所に設置し、「ARスタンプラリー」の案内を併記してください</li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <h1>📱 QRコード生成ツール</h1>
+            <p>各スタンプポイント用のQRコードを生成します</p>
         </div>
-        
-        <div class="qr-grid" id="qr-grid">
-            <!-- QRコードはJavaScriptで生成 -->
+
+        <div class="qr-container">
+            <h2>🎯 QRコード一覧</h2>
+            <div class="qr-grid" id="qr-grid"></div>
+            
+            <div class="text-center mt-20">
+                <button class="button primary" onclick="window.print()">🖨️ 印刷する</button>
+                <a href="index.html" class="button secondary">🏠 ホームに戻る</a>
+            </div>
         </div>
     </div>
-    
-    <script src="js/stamp-rally.js"></script>
+
+    <script src="js/stamp-rally.js?v=3.0.0"></script>
     <script>
-        // ベースURL（GitHub Pages用）
-        const baseUrl = 'https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps';
-        
         // QRコードを生成
-        const qrGrid = document.getElementById('qr-grid');
-        
-        Object.keys(STAMP_DATA).forEach((stampId, index) => {
-            const stamp = STAMP_DATA[stampId];
-            const url = `${baseUrl}/${stampId}.html`;
+        function generateQRCodes() {
+            const grid = document.getElementById('qr-grid');
+            if (!grid) return;
             
-            // QRコードコンテナを作成
-            const qrItem = document.createElement('div');
-            qrItem.className = 'qr-item';
-            qrItem.style.borderTopColor = stamp.color;
+            grid.innerHTML = '';
+            const baseUrl = `${window.location.origin}${window.location.pathname.replace('qr-generator.html', '')}`;
             
-            qrItem.innerHTML = `
-                <h2>${index + 1}. ${stamp.name}</h2>
-                <div class="qr-icon">${stamp.icon}</div>
-                <div class="qr-description">${stamp.description}</div>
-                <div class="qr-code" id="qr-${stampId}"></div>
-                <div class="qr-url">${url}</div>
-                <button class="download-btn" onclick="downloadQR('qr-${stampId}', '${stamp.name}')">
-                    画像をダウンロード
-                </button>
-            `;
-            
-            qrGrid.appendChild(qrItem);
-            
-            // QRコードを生成
-            new QRCode(document.getElementById(`qr-${stampId}`), {
-                text: url,
-                width: 256,
-                height: 256,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
+            Object.keys(STAMP_DATA).forEach(stampId => {
+                const stamp = STAMP_DATA[stampId];
+                const url = `${baseUrl}stamps/${stampId}.html`;
+                
+                const item = document.createElement('div');
+                item.className = 'qr-item';
+                item.innerHTML = `
+                    <h3 style="color: ${stamp.color};">${stamp.icon} ${stamp.name}</h3>
+                    <div id="qr-${stampId}"></div>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">${url}</p>
+                `;
+                
+                grid.appendChild(item);
+                
+                // QRコード生成
+                setTimeout(() => {
+                    new QRCode(document.getElementById(`qr-${stampId}`), {
+                        text: url,
+                        width: 180,
+                        height: 180,
+                        colorDark: stamp.color || "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }, 100);
             });
-        });
-        
-        // QRコード画像をダウンロード
-        function downloadQR(qrId, stampName) {
-            const qrCanvas = document.querySelector(`#${qrId} canvas`);
-            if (qrCanvas) {
-                const link = document.createElement('a');
-                link.download = `QR_${stampName}.png`;
-                link.href = qrCanvas.toDataURL();
-                link.click();
+        }
+
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof STAMP_DATA !== 'undefined') {
+                generateQRCodes();
+            } else {
+                setTimeout(generateQRCodes, 500);
             }
-        }
-        
-        // 印刷
-        window.printQRCodes = function() {
-            window.print();
-        }
+        });
     </script>
 </body>
 </html>
