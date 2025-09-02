@@ -1,12 +1,12 @@
 {
-  "name": "文化祭ARスタンプラリー",
-  "short_name": "ARスタンプ",
-  "description": "文化祭で8つのスタンプを集めよう！",
+  "name": "ニシャマースタンプラリー",
+  "short_name": "ニシャマースタンプ",
+  "description": "ニシャマーと一緒に10個のスタンプを集めよう！",
   "start_url": "/ar-stamp-rallybeta/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#667eea",
-  "theme_color": "#667eea",
+  "background_color": "#4A90E2",
+  "theme_color": "#4A90E2",
   "icons": [
     {
       "src": "nisyama1.png",

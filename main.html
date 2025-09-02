@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ARスタンプ">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>ニシャマースタンプラリー</title>
+    <link rel="apple-touch-icon" href="nisyama1.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css?v=3.0.0">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="logo.png" alt="ニシャマーロゴ" style="max-width: 200px; height: auto; margin-bottom: 20px;">
+            <h1>🎪 ニシャマースタンプラリー</h1>
+            <p>10の場所でQRコードを見つけて<br>スマホのカメラで読み取ろう！</p>
+        </div>
+
+        <div class="card">
+            <h2>📊 収集状況</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill">
+                    <span class="progress-text" id="progress-text">0 / 10</span>
+                </div>
+            </div>
+            <p id="complete-message" class="hidden text-center mt-20" style="font-size:1.2rem; color:#4CAF50;">
+                🎉 全スタンプコンプリート！おめでとうございます！
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>🏆 スタンプコレクション</h2>
+            <div class="stamp-grid" id="stamp-grid">
+                <div class="text-center" style="padding: 20px; color: #999;">
+                    読み込み中...
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center" style="margin: 30px 0;">
+            <button class="button info" onclick="showInstructions()">📖 使い方</button>
+            <button class="button warning" onclick="forceUpdate()">🔄 最新版に更新</button>
+            <button class="button secondary" onclick="resetStamps()">🗑️ リセット</button>
+        </div>
+    </div>
+
+    <div id="instructions-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000;">
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:15px; max-width:500px; width:90%; color:#333;">
+            <h2 style="margin-bottom:20px;">📖 使い方</h2>
+            <ol style="text-align:left; line-height:1.8;">
+                <li>会場内の10箇所に設置されたQRコードを探そう</li>
+                <li>スマホのカメラアプリでQRコードを読み取ろう</li>
+                <li>表示されたリンクをタップしてスタンプをゲット</li>
+                <li>全部集めると特別なメッセージが！</li>
+            </ol>
+            <button class="button primary" onclick="closeInstructions()" style="margin-top:20px;">閉じる</button>
+        </div>
+    </div>
+
+    <script src="js/stamp-rally.js?v=3.0.0"></script>
+    <script src="js/app.js?v=3.0.0"></script>
+</body>
+</html>

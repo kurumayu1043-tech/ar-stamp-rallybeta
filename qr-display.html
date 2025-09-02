@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRコード一覧 - ニシャマースタンプラリー</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #1976D2;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0 #FFD54F;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .qr-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .qr-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .qr-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .qr-container {
+            display: inline-block;
+            padding: 10px;
+            background: white;
+            border: 2px solid #E3F2FD;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .url-text {
+            font-size: 0.7rem;
+            color: #999;
+            word-break: break-all;
+            margin-top: 10px;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        .print-instructions {
+            background: #FFF9C4;
+            border-left: 4px solid #FFD700;
+            padding: 15px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+        
+        .print-instructions h2 {
+            color: #F57C00;
+            margin-top: 0;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .qr-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .print-instructions {
+                display: none;
+            }
+            
+            .qr-card {
+                page-break-inside: avoid;
+            }
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .button.primary {
+            background: #FFD700;
+            color: #333;
+        }
+        
+        .button.primary:hover {
+            background: #FFC107;
+            transform: translateY(-2px);
+        }
+        
+        .button.secondary {
+            background: #4A90E2;
+            color: white;
+        }
+        
+        .button.secondary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+        
+        .action-buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 ニシャマースタンプラリー QRコード一覧</h1>
+        <p class="subtitle">各場所に設置するQRコードです。印刷してご利用ください。</p>
+        
+        <div class="print-instructions">
+            <h2>📝 印刷の手順</h2>
+            <ol>
+                <li>このページを開いた状態で「印刷」ボタンをクリック</li>
+                <li>印刷設定で「背景のグラフィック」にチェックを入れる</li>
+                <li>用紙サイズをA4に設定</li>
+                <li>各QRコードを切り取って、対応する場所に設置</li>
+            </ol>
+        </div>
+        
+        <div class="qr-grid" id="qr-grid">
+            <!-- QRコードがここに生成されます -->
+        </div>
+        
+        <div class="action-buttons">
+            <button class="button primary" onclick="window.print()">🖨️ このページを印刷</button>
+            <a href="main.html" class="button secondary">🏠 メインページへ</a>
+        </div>
+    </div>
+    
+    <script>
+        // スタンプデータ
+        const stamps = [
+            { id: 'entrance', name: '入場口', icon: '🎪', description: 'ようこそ文化祭へ！', color: '#FF6B6B' },
+            { id: 'ticket', name: '金券売り場', icon: '🎫', description: '金券はこちらで！', color: '#4ECDC4' },
+            { id: 'stage', name: 'ステージ前', icon: '🎭', description: 'パフォーマンスを楽しもう！', color: '#45B7D1' },
+            { id: 'bunmi1', name: '文実模擬店１', icon: '🍜', description: '美味しい食べ物がいっぱい！', color: '#96CEB4' },
+            { id: 'bunmi2', name: '文実模擬店２', icon: '🎮', description: '楽しいゲームコーナー！', color: '#FFEAA7' },
+            { id: 'yamato', name: '庭大和', icon: '🌸', description: '憩いの空間でひと休み', color: '#DDA0DD' },
+            { id: 'rhythm', name: 'リズム館', icon: '🎵', description: '音楽の世界へようこそ！', color: '#98D8C8' },
+            { id: 'gym', name: '体育館', icon: '🏐', description: 'スポーツイベント開催中！', color: '#FFB6C1' },
+            { id: 'budo', name: '武道場', icon: '🥋', description: '迫力の武道演武をご覧ください！', color: '#FFD54F' },
+            { id: 'exhibition', name: '特技展示', icon: '🎨', description: '生徒たちの特技を展示しています！', color: '#4FC3F7' }
+        ];
+        
+        // ベースURL
+        const baseUrl = 'https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/';
+        
+        // QRコード生成
+        function generateQRCodes() {
+            const grid = document.getElementById('qr-grid');
+            
+            stamps.forEach((stamp, index) => {
+                const url = baseUrl + stamp.id + '.html';
+                
+                // カード作成
+                const card = document.createElement('div');
+                card.className = 'qr-card';
+                
+                // タイトル
+                const title = document.createElement('div');
+                title.className = 'qr-title';
+                title.style.color = stamp.color;
+                title.innerHTML = `${stamp.icon} ${stamp.name}`;
+                card.appendChild(title);
+                
+                // 説明
+                const description = document.createElement('div');
+                description.className = 'qr-description';
+                description.textContent = stamp.description;
+                card.appendChild(description);
+                
+                // QRコードコンテナ
+                const qrContainer = document.createElement('div');
+                qrContainer.className = 'qr-container';
+                
+                // QRコード要素
+                const qrElement = document.createElement('div');
+                qrElement.id = `qr-${stamp.id}`;
+                qrContainer.appendChild(qrElement);
+                card.appendChild(qrContainer);
+                
+                // URL表示
+                const urlText = document.createElement('div');
+                urlText.className = 'url-text';
+                urlText.textContent = url;
+                card.appendChild(urlText);
+                
+                // グリッドに追加
+                grid.appendChild(card);
+                
+                // QRコード生成（少し遅延させて要素が確実にDOMに追加されるようにする）
+                setTimeout(() => {
+                    new QRCode(document.getElementById(`qr-${stamp.id}`), {
+                        text: url,
+                        width: 200,
+                        height: 200,
+                        colorDark: stamp.color,
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }, 100 * (index + 1));
+            });
+        }
+        
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', generateQRCodes);
+    </script>
+</body>
+</html>

@@ -1,9 +1,9 @@
-# 文化祭 ARスタンプラリー
+# ニシャマースタンプラリー
 
 ## 概要
-文化祭で使用するARスタンプラリーアプリケーションです。8つの場所でQRコードを見つけて、スマホのカメラアプリで読み取ることでスタンプを集めることができます。スタンプ取得後は自動的にカメラが起動し、キャラクターと一緒に撮影を楽しめます。
+ニシャマーと一緒に楽しむスタンプラリーアプリケーションです。10の場所でQRコードを見つけて、スマホのカメラアプリで読み取ることでスタンプを集めることができます。マスコットキャラクター「ニシャマー」がみんなの冒険をサポートします！
 
-## スタンプラリー場所（8箇所）
+## スタンプラリー場所（10箇所）
 1. **入場口** - ようこそ文化祭へ！
 2. **金券売り場** - 金券はこちらで
 3. **ステージ前** - パフォーマンスを楽しもう
@@ -12,41 +12,45 @@
 6. **庭大和** - 憩いの空間
 7. **リズム館** - 音楽の世界へ
 8. **体育館** - スポーツイベント開催中
+9. **武道場** - 迫力の武道演武をご覧ください！
+10. **特技展示** - 生徒たちの特技を展示しています！
 
 ## 使い方
 
 ### 参加者向け
-1. 各場所に設置されたQRコードを探す
-2. スマホの標準カメラアプリでQRコードを読み取る
-3. スタンプが自動的に収集される
-4. カメラが起動し、キャラクターと一緒に撮影できる（5秒間）
-5. 自動的にホーム画面に戻る
-3. 表示されたリンクをタップしてサイトにアクセス
-4. ARでマスコットキャラクター（nisyama1.png）が表示される
+1. まずキャラクター紹介ページでニシャマーと出会う
+2. 各場所に設置されたQRコードを探す
+3. スマホの標準カメラアプリでQRコードを読み取る
+4. 表示されたリンクをタップしてスタンプを獲得
 5. スタンプが自動的に記録される
-6. 8個全て集めるとコンプリート！
+6. 3秒後にメイン画面に戻る
+7. 10個全て集めるとコンプリート！
 
 ### QRコードの作成方法
-各場所用のQRコードは以下のURLで作成してください：
+`qr-generator.html`ページで全スタンプのQRコードを一括生成できます。
+各場所用のQRコードは以下のURLで作成されます：
 
-- **入場口**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=entrance`
-- **金券売り場**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=ticket`
-- **ステージ前**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=stage`
-- **文実模擬店１**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=bunmi1`
-- **文実模擬店２**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=bunmi2`
-- **庭大和**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=yamato`
-- **リズム館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=rhythm`
-- **体育館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/collect.html?stamp=gym`
+- **入場口**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/entrance.html`
+- **金券売り場**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/ticket.html`
+- **ステージ前**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/stage.html`
+- **文実模擬店１**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/bunmi1.html`
+- **文実模擬店２**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/bunmi2.html`
+- **庭大和**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/yamato.html`
+- **リズム館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/rhythm.html`
+- **体育館**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/gym.html`
+- **武道場**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/budo.html`
+- **特技展示**: `https://kurumayu1043-tech.github.io/ar-stamp-rallybeta/stamps/exhibition.html`
 
 ## 機能
-- URLパラメータによるスタンプ収集（QRコード読み取り後）
-- カメラ起動とキャラクター表示（スタンプ取得後）
-- AR風キャラクター（character.gif）との撮影機能
+- キャラクター紹介ページ（ニシャマー紹介）
+- QRコード一括生成機能（qr-generator.html）
+- 個別スタンプページによる収集（各stamps/*.html）
 - スタンプ収集状況の保存（localStorage使用）
 - タブ間同期（複数タブで開いても同期）
 - 全スタンプ収集時のコンプリート演出
 - スタンプリセット機能
 - PWA対応（オフラインでも動作）
+- レスポンシブデザイン（スマートフォン最適化）
 
 ## 技術仕様
 - **PWA対応**: Service Worker実装
