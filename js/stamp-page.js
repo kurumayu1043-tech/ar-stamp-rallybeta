@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 自動リダイレクト
     setTimeout(() => {
         clearInterval(countdownInterval);
-        console.log('🔄 ホームページにリダイレクト');
-        window.location.href = '../index.html';
+        console.log('🔄 スタンプ台紙ページにリダイレクト');
+        window.location.href = '../main.html';
     }, config.redirectDelay);
 });
 
