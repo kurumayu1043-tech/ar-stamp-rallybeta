@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>カメラ機能テスト - ARスタンプラリー</title>
+    <link rel="stylesheet" href="css/style.css?v=3.1.0">
+    <style>
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            margin-top: 50px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .test-container h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-button {
+            width: 100%;
+            margin: 10px 0;
+            padding: 20px;
+            font-size: 1.1rem;
+        }
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            color: #333;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>📸 カメラ機能テスト</h1>
+        
+        <button class="button primary test-button" onclick="testCamera()">
+            カメラを起動（キャラクター付き）
+        </button>
+        
+        <button class="button info test-button" onclick="testCameraOnly()">
+            カメラのみ起動（キャラクターなし）
+        </button>
+        
+        <button class="button warning test-button" onclick="testCharacterOnly()">
+            キャラクターのみ表示
+        </button>
+        
+        <div id="status" class="status-message">
+            準備完了
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="index.html" class="button secondary">ホームに戻る</a>
+        </div>
+    </div>
+
+    <script>
+        let cameraStream = null;
+        
+        // カメラとキャラクターをテスト
+        async function testCamera() {
+            updateStatus('カメラを起動中...');
+            
+            const cameraContainer = document.createElement('div');
+            cameraContainer.className = 'camera-container active';
+            cameraContainer.innerHTML = `
+                <div class="camera-view">
+                    <video id="camera-video" autoplay playsinline></video>
+                    <div class="character-overlay">
+                        <img src="character.gif" alt="キャラクター">
+                    </div>
+                    <div class="camera-countdown" id="camera-countdown">
+                        テスト中...
+                    </div>
+                    <button class="camera-close-btn" onclick="closeTestCamera()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(cameraContainer);
+            
+            const video = document.getElementById('camera-video');
+            
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+                
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = cameraStream;
+                
+                updateStatus('カメラ起動成功！キャラクターと一緒に表示中');
+                document.getElementById('camera-countdown').textContent = 'カメラとキャラクター表示中';
+                
+            } catch (error) {
+                console.error('カメラエラー:', error);
+                updateStatus('カメラの起動に失敗: ' + error.message);
+                setTimeout(() => closeTestCamera(), 2000);
+            }
+        }
+        
+        // カメラのみテスト
+        async function testCameraOnly() {
+            updateStatus('カメラのみ起動中...');
+            
+            const cameraContainer = document.createElement('div');
+            cameraContainer.className = 'camera-container active';
+            cameraContainer.innerHTML = `
+                <div class="camera-view">
+                    <video id="camera-video" autoplay playsinline></video>
+                    <div class="camera-countdown" id="camera-countdown">
+                        カメラのみテスト中...
+                    </div>
+                    <button class="camera-close-btn" onclick="closeTestCamera()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(cameraContainer);
+            
+            const video = document.getElementById('camera-video');
+            
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+                
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = cameraStream;
+                
+                updateStatus('カメラのみ起動成功！');
+                
+            } catch (error) {
+                console.error('カメラエラー:', error);
+                updateStatus('カメラの起動に失敗: ' + error.message);
+                setTimeout(() => closeTestCamera(), 2000);
+            }
+        }
+        
+        // キャラクターのみテスト
+        function testCharacterOnly() {
+            updateStatus('キャラクターのみ表示中...');
+            
+            const cameraContainer = document.createElement('div');
+            cameraContainer.className = 'camera-container active';
+            cameraContainer.innerHTML = `
+                <div class="camera-view" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="character-overlay">
+                        <img src="character.gif" alt="キャラクター">
+                    </div>
+                    <div class="camera-countdown">
+                        キャラクターのみ表示中
+                    </div>
+                    <button class="camera-close-btn" onclick="closeTestCamera()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(cameraContainer);
+            updateStatus('キャラクター表示成功！');
+        }
+        
+        // カメラを閉じる
+        function closeTestCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                cameraStream = null;
+            }
+            
+            const cameraContainer = document.querySelector('.camera-container');
+            if (cameraContainer) {
+                cameraContainer.remove();
+            }
+            
+            updateStatus('カメラを閉じました');
+        }
+        
+        // ステータス更新
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log(message);
+        }
+        
+        // グローバル関数として公開
+        window.closeTestCamera = closeTestCamera;
+    </script>
+</body>
+</html>
