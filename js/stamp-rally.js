@@ -1,65 +1,79 @@
 // ========================================
 // ARスタンプラリー 共通JavaScript
-// Version: 2.0.0
+// Version: 4.0.0
 // ========================================
 
-// スタンプデータの定義（2×4のグリッドに最適化された順序）
+// スタンプデータの定義（10箇所に拡張）
 const STAMP_DATA = {
     entrance: { 
         name: '入場口', 
         icon: '🏛️',
         description: 'ようこそ文化祭へ！素敵な一日をお過ごしください。',
-        color: '#ffc0cb',
+        color: '#4FC3F7',
         order: 1
     },
     ticket: { 
         name: '金券売り場', 
         icon: '🎫',
         description: '金券はこちらでお買い求めください。',
-        color: '#98c1d9',
+        color: '#29B6F6',
         order: 2
     },
     stage: { 
         name: 'ステージ前', 
         icon: '🎭',
         description: 'パフォーマンスをお楽しみください！',
-        color: '#f7e07a',
+        color: '#FFD54F',
         order: 3
     },
     bunmi1: { 
         name: '文実模擬店１', 
         icon: '🍜',
         description: '美味しい食べ物がいっぱい！',
-        color: '#a9e2a9',
+        color: '#4FC3F7',
         order: 4
     },
     bunmi2: { 
         name: '文実模擬店２', 
         icon: '🎮',
         description: '楽しいゲームコーナーです。',
-        color: '#d2b4de',
+        color: '#29B6F6',
         order: 5
     },
     yamato: { 
         name: '庭大和', 
         icon: '🌸',
         description: '和の雰囲気を感じる憩いの空間。',
-        color: '#ffb6c1',
+        color: '#FFD54F',
         order: 6
     },
     rhythm: { 
         name: 'リズム館', 
         icon: '🎵',
         description: '音楽の世界へようこそ！',
-        color: '#87ceeb',
+        color: '#4FC3F7',
         order: 7
     },
     gym: { 
         name: '体育館', 
         icon: '🏐',
         description: 'スポーツイベント開催中！',
-        color: '#dda0dd',
+        color: '#29B6F6',
         order: 8
+    },
+    budo: { 
+        name: '武道場', 
+        icon: '🥋',
+        description: '迫力の武道演武をご覧ください！',
+        color: '#FFD54F',
+        order: 9
+    },
+    exhibition: { 
+        name: '特技展示', 
+        icon: '🎨',
+        description: '生徒たちの特技を展示しています！',
+        color: '#4FC3F7',
+        order: 10
     }
 };
 
@@ -70,7 +84,7 @@ class StampRally {
         this.storageKey = 'arStamps2024';
         this.tabStorageKey = 'arStamps2024_tabs';
         this.currentStampKey = 'currentStamp';
-        this.debugMode = true; // デバッグモードを有効化
+        this.debugMode = true;
         this.init();
     }
 
@@ -189,7 +203,6 @@ class StampRally {
 
     // タブ間同期のセットアップ
     setupTabSync() {
-        // storageイベントをリッスン（他のタブでの変更を検知）
         window.addEventListener('storage', (e) => {
             if (e.key === this.storageKey) {
                 this.debugLog('他のタブでスタンプが更新されました', {
@@ -201,7 +214,6 @@ class StampRally {
                     this.onStampsUpdated();
                 }
             } else if (e.key === this.tabStorageKey) {
-                // 他のタブからの通知を受信
                 const message = JSON.parse(e.newValue);
                 this.handleTabMessage(message);
             }
@@ -236,7 +248,6 @@ class StampRally {
         try {
             localStorage.setItem(this.tabStorageKey, JSON.stringify(message));
             this.debugLog('タブ更新通知送信', message);
-            // すぐに削除（イベントを発火させるため）
             setTimeout(() => {
                 localStorage.removeItem(this.tabStorageKey);
             }, 100);
@@ -257,7 +268,7 @@ class StampRally {
         }
     }
 
-    // タブIDを取得（セッション中は固定）
+    // タブIDを取得
     getTabId() {
         if (!this.tabId) {
             this.tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -266,31 +277,11 @@ class StampRally {
         return this.tabId;
     }
 
-    // 現在のスタンプを保存（タブ間共有用）
-    setCurrentStamp(stampId) {
-        sessionStorage.setItem(this.currentStampKey, stampId);
-        this.debugLog('現在のスタンプ設定', stampId);
-    }
-
-    // 現在のスタンプを取得
-    getCurrentStamp() {
-        const current = sessionStorage.getItem(this.currentStampKey);
-        this.debugLog('現在のスタンプ取得', current);
-        return current;
-    }
-
-    // 現在のスタンプをクリア
-    clearCurrentStamp() {
-        sessionStorage.removeItem(this.currentStampKey);
-        this.debugLog('現在のスタンプクリア');
-    }
-
     // デバッグ情報を取得
     getDebugInfo() {
         return {
             stamps: this.stamps,
             localStorage: localStorage.getItem(this.storageKey),
-            sessionStorage: sessionStorage.getItem(this.currentStampKey),
             collectedCount: this.getCollectedCount(),
             totalStamps: Object.keys(STAMP_DATA).length,
             isAllCollected: this.isAllCollected(),
@@ -308,54 +299,6 @@ function getUrlParam(param) {
 // ページ遷移のヘルパー関数
 function navigateTo(url) {
     window.location.href = url;
-}
-
-// ローディング表示
-function showLoading() {
-    const loading = document.createElement('div');
-    loading.className = 'loading';
-    loading.innerHTML = '<div class="loading-spinner"></div>';
-    document.body.appendChild(loading);
-}
-
-function hideLoading() {
-    const loading = document.querySelector('.loading');
-    if (loading) {
-        loading.remove();
-    }
-}
-
-// デバッグログ
-function debugLog(message) {
-    if (getUrlParam('debug') === '1') {
-        console.log('[DEBUG]', message);
-        
-        // デバッグパネルを表示
-        let debugPanel = document.getElementById('debug-panel');
-        if (!debugPanel) {
-            debugPanel = document.createElement('div');
-            debugPanel.id = 'debug-panel';
-            debugPanel.style.cssText = `
-                position: fixed;
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-                background: rgba(0,0,0,0.8);
-                color: #0f0;
-                padding: 10px;
-                font-family: monospace;
-                font-size: 12px;
-                max-height: 200px;
-                overflow-y: auto;
-                z-index: 9999;
-                border-radius: 5px;
-            `;
-            document.body.appendChild(debugPanel);
-        }
-        
-        const timestamp = new Date().toTimeString().split(' ')[0];
-        debugPanel.innerHTML = `[${timestamp}] ${message}<br>` + debugPanel.innerHTML;
-    }
 }
 
 // スタンプラリーインスタンスをグローバルに作成
