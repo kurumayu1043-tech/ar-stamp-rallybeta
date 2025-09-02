@@ -10,6 +10,7 @@ ar-stamp-rallybeta/
 ├── manifest.json           # PWA設定
 ├── sw.js                   # Service Worker
 ├── nisyama1.png           # スタンプ画像
+├── character.gif          # キャラクターアニメーション
 ├── .nojekyll              # GitHub Pages設定
 ├── README.md              # プロジェクト説明
 │
@@ -62,7 +63,8 @@ ar-stamp-rallybeta/
 - **stamp-page.js**: 
   - スタンプページ共通処理
   - 自動収集
-  - リダイレクト処理
+  - カメラ起動とキャラクター表示
+  - 自動リダイレクト処理
 
 ### その他
 - **sw.js**: Service Worker（キャッシュ管理）
