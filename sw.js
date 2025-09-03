@@ -1,6 +1,6 @@
 // Service Worker for AR Stamp Rally PWA
 // Force update version - timestamp included for cache busting
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v11';
 const CACHE_NAME = `ar-stamp-${CACHE_VERSION}-${Date.now()}`;
 const BASE_URL = '/ar-stamp-rallybeta/';
 

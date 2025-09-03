@@ -10,70 +10,80 @@ const STAMP_DATA = {
         icon: '🏛️',
         description: 'ようこそ文化祭へ！素敵な一日をお過ごしください。',
         color: '#4FC3F7',
-        order: 1
+        order: 1,
+        image: 'stamps_images/entrance.png'
     },
     ticket: { 
         name: '金券売り場', 
         icon: '🎫',
         description: '金券はこちらでお買い求めください。',
         color: '#29B6F6',
-        order: 2
+        order: 2,
+        image: 'stamps_images/ticket.png'
     },
     stage: { 
         name: 'ステージ前', 
         icon: '🎭',
         description: 'パフォーマンスをお楽しみください！',
         color: '#FFD54F',
-        order: 3
+        order: 3,
+        image: 'stamps_images/stage.png'
     },
     bunmi1: { 
         name: '文実模擬店１', 
         icon: '🍜',
         description: '美味しい食べ物がいっぱい！',
         color: '#4FC3F7',
-        order: 4
+        order: 4,
+        image: 'stamps_images/bunmi1.png'
     },
     bunmi2: { 
         name: '文実模擬店２', 
         icon: '🎮',
         description: '楽しいゲームコーナーです。',
         color: '#29B6F6',
-        order: 5
+        order: 5,
+        image: 'stamps_images/bunmi2.png'
     },
     yamato: { 
         name: '庭大和', 
         icon: '🌸',
         description: '和の雰囲気を感じる憩いの空間。',
         color: '#FFD54F',
-        order: 6
+        order: 6,
+        image: 'stamps_images/yamato.png'
     },
     rhythm: { 
         name: 'リズム館', 
         icon: '🎵',
         description: '音楽の世界へようこそ！',
         color: '#4FC3F7',
-        order: 7
+        order: 7,
+        image: 'stamps_images/rhythm.png'
     },
     gym: { 
         name: '体育館', 
         icon: '🏐',
         description: 'スポーツイベント開催中！',
         color: '#29B6F6',
-        order: 8
+        order: 8,
+        image: 'stamps_images/gym.png'
     },
     budo: { 
         name: '武道場', 
         icon: '🥋',
         description: '迫力の武道演武をご覧ください！',
         color: '#FFD54F',
-        order: 9
+        order: 9,
+        image: 'nisyama1.png'
     },
     exhibition: { 
         name: '特技展示', 
         icon: '🎨',
         description: '生徒たちの特技を展示しています！',
         color: '#4FC3F7',
-        order: 10
+        order: 10,
+        image: 'nisyama1.png'
     }
 };
 

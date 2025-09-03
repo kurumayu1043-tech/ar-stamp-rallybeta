@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スタンプギャラリー - ニシャマースタンプラリー</title>
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #1976D2;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0 #FFD54F;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #333;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #FFD54F;
+            padding-bottom: 10px;
+        }
+        
+        .logo-section {
+            text-align: center;
+        }
+        
+        .logo-section img {
+            max-width: 400px;
+            width: 90%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stamps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        .stamp-card {
+            background: #f9f9f9;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #E3F2FD;
+            transition: all 0.3s;
+        }
+        
+        .stamp-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #4A90E2;
+        }
+        
+        .stamp-card img {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stamp-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .stamp-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .stamp-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .stamp-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .characters-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .character-card {
+            text-align: center;
+        }
+        
+        .character-card img {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .character-card h3 {
+            color: #1976D2;
+            margin-top: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .nav-buttons {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            margin: 10px;
+            background: #4A90E2;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .button:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .button.secondary {
+            background: #FFD700;
+            color: #333;
+        }
+        
+        .button.secondary:hover {
+            background: #FFC107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 スタンプギャラリー</h1>
+        <p class="subtitle">ニシャマースタンプラリーで使用される全ての画像コレクション</p>
+        
+        <div class="section">
+            <h2>🏢 ロゴ</h2>
+            <div class="logo-section">
+                <img src="logo.jpg" alt="ニシャマーロゴ">
+                <p style="color: #666; margin-top: 10px;">ニシャマースタンプラリー公式ロゴ</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📍 各エリアのスタンプ画像</h2>
+            <div class="stamps-grid">
+                <div class="stamp-card">
+                    <div class="stamp-icon">🏛️</div>
+                    <img src="stamps_images/entrance.png" alt="入場口スタンプ">
+                    <div class="stamp-title">入場口</div>
+                    <div class="stamp-badge" style="background: #E3F2FD; color: #1976D2;">エリア 1</div>
+                    <p class="stamp-description">ようこそ文化祭へ！素敵な一日をお過ごしください。</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🎫</div>
+                    <img src="stamps_images/ticket.png" alt="金券売り場スタンプ">
+                    <div class="stamp-title">金券売り場</div>
+                    <div class="stamp-badge" style="background: #E1F5FE; color: #0288D1;">エリア 2</div>
+                    <p class="stamp-description">金券はこちらでお買い求めください。</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🎭</div>
+                    <img src="stamps_images/stage.png" alt="ステージ前スタンプ">
+                    <div class="stamp-title">ステージ前</div>
+                    <div class="stamp-badge" style="background: #FFF9C4; color: #F57C00;">エリア 3</div>
+                    <p class="stamp-description">パフォーマンスをお楽しみください！</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🍜</div>
+                    <img src="stamps_images/bunmi1.png" alt="文実模擬店１スタンプ">
+                    <div class="stamp-title">文実模擬店１</div>
+                    <div class="stamp-badge" style="background: #E3F2FD; color: #1976D2;">エリア 4</div>
+                    <p class="stamp-description">美味しい食べ物がいっぱい！</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🎮</div>
+                    <img src="stamps_images/bunmi2.png" alt="文実模擬店２スタンプ">
+                    <div class="stamp-title">文実模擬店２</div>
+                    <div class="stamp-badge" style="background: #E1F5FE; color: #0288D1;">エリア 5</div>
+                    <p class="stamp-description">楽しいゲームコーナーです。</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🌸</div>
+                    <img src="stamps_images/yamato.png" alt="庭大和スタンプ">
+                    <div class="stamp-title">庭大和</div>
+                    <div class="stamp-badge" style="background: #FFF9C4; color: #F57C00;">エリア 6</div>
+                    <p class="stamp-description">和の雰囲気を感じる憩いの空間。</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🎵</div>
+                    <img src="stamps_images/rhythm.png" alt="リズム館スタンプ">
+                    <div class="stamp-title">リズム館</div>
+                    <div class="stamp-badge" style="background: #E3F2FD; color: #1976D2;">エリア 7</div>
+                    <p class="stamp-description">音楽の世界へようこそ！</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🏐</div>
+                    <img src="stamps_images/gym.png" alt="体育館スタンプ">
+                    <div class="stamp-title">体育館</div>
+                    <div class="stamp-badge" style="background: #E1F5FE; color: #0288D1;">エリア 8</div>
+                    <p class="stamp-description">スポーツイベント開催中！</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🥋</div>
+                    <img src="nisyama1.png" alt="武道場スタンプ">
+                    <div class="stamp-title">武道場</div>
+                    <div class="stamp-badge" style="background: #FFF9C4; color: #F57C00;">エリア 9</div>
+                    <p class="stamp-description">迫力の武道演武をご覧ください！</p>
+                </div>
+                
+                <div class="stamp-card">
+                    <div class="stamp-icon">🎨</div>
+                    <img src="nisyama1.png" alt="特技展示スタンプ">
+                    <div class="stamp-title">特技展示</div>
+                    <div class="stamp-badge" style="background: #E3F2FD; color: #1976D2;">エリア 10</div>
+                    <p class="stamp-description">生徒たちの特技を展示しています！</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🌟 キャラクター画像</h2>
+            <div class="characters-section">
+                <div class="character-card">
+                    <img src="nisyama1.png" alt="ニシャマーメイン">
+                    <h3>ニシャマー（メイン）</h3>
+                    <p style="color: #666;">メインキャラクター画像</p>
+                </div>
+                
+                <div class="character-card">
+                    <img src="character_new.jpg" alt="ニシャマー3D">
+                    <h3>ニシャマー（3Dモデル）</h3>
+                    <p style="color: #666;">キャラクター紹介ページ用</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="nav-buttons">
+            <a href="index.html" class="button">トップページへ</a>
+            <a href="main.html" class="button secondary">スタンプ台紙へ</a>
+            <a href="qr-display.html" class="button">QRコード一覧へ</a>
+        </div>
+    </div>
+</body>
+</html>

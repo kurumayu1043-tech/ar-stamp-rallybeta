@@ -31,9 +31,12 @@ function renderStamps() {
         item.className = `stamp-item ${isCollected ? 'collected' : ''}`;
         item.style.borderTop = `3px solid ${stamp.color}`;
         
+        // スタンプ画像を決定（データに画像パスがあれば使用、なければデフォルト）
+        const stampImage = stamp.image || 'nisyama1.png';
+        
         item.innerHTML = `
             <div class="stamp-icon">
-                <img src="nisyama1.png" alt="スタンプ">
+                <img src="${stampImage}" alt="${stamp.name}スタンプ">
                 ${!isCollected ? `<span class="stamp-emoji">${stamp.icon}</span>` : ''}
             </div>
             <div class="stamp-name">${stamp.name}</div>
